@@ -1,0 +1,113 @@
+{
+	"names_taken" :
+	[
+		{
+			"lang" : "assembler",
+			"names" :
+			[
+				"emg",
+				"lcl_set",
+				"lcl_bi",
+				"lcl_bo"
+			],
+			"cmds" :
+			[
+				
+			],
+			"files" :
+			[
+			
+			]
+		},
+		{
+			"lang" : "salo",
+			"names" :
+			[
+				"головний"
+			],
+			"cmds" :
+			[
+				
+			],
+			"files" :
+			[
+				"говірка"
+			]
+		}
+	],
+	"names_translated" :
+	[
+		{
+			"locale" : "їнасипати",
+			"translated" : "#merge"
+		},
+		{
+			"locale" : "їнехай",
+			"translated" : "#define"
+		},
+		{
+			"locale" : "спільний",
+			"translated" : "shared"
+		},
+		{
+			"locale" : "власний",
+			"translated" : "private"
+		},
+		{
+			"locale" : "шматок",
+			"translated" : "function"
+		},
+		{
+			"locale" : "кусень",
+			"translated" : "action"
+		},
+		{
+			"locale" : "шкварок",
+			"translated" : "block"
+		},
+		{
+			"locale" : "бере",
+			"translated" : "takes"
+		},
+		{
+			"locale" : "дає",
+			"translated" : "gives"
+		},
+		{
+			"locale" : "смакує",
+			"translated" : "does"
+		},
+		{
+			"locale" : "кінець",
+			"translated" : "ends"
+		},
+		{
+			"locale" : "вернути",
+			"translated" : "return"
+		},
+		{
+			"locale" : "нічого",
+			"translated" : "void"
+		},
+		{
+			"locale" : "число",
+			"translated" : "int32"
+		},
+		{
+			"locale" : "буква",
+			"translated" : "int8"
+		},
+		{
+			"locale" : "дріб",
+			"translated" : "float32"
+		},
+		{
+			"locale" : "запит",
+			"translated" : "bool"
+		},
+		{
+			"locale" : "головний",
+			"translated" : "main"
+		}
+	]
+}
