@@ -44,18 +44,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AST\AST_Comment.cs" />
     <Compile Include="AST\AST_Define.cs" />
     <Compile Include="AST\AST_Directive.cs" />
+    <Compile Include="AST\AST_Expression.cs" />
+    <Compile Include="AST\AST_Function.cs" />
     <Compile Include="AST\AST_Include.cs" />
     <Compile Include="AST\AST_Node.cs" />
     <Compile Include="AST\AST_Program.cs" />
     <Compile Include="AST\AST_Unknown.cs" />
+    <Compile Include="AST\Data\AST_Data.cs" />
+    <Compile Include="AST\Data\AST_Type.cs" />
+    <Compile Include="AST\Data\AST_Variable.cs" />
     <Compile Include="Builders\Builder_AST.cs" />
     <Compile Include="Builders\Builder_Global.cs" />
     <Compile Include="Builders\Builder_Locales.cs" />
     <Compile Include="Builders\Builder_Translation.cs" />
     <Compile Include="CodeBlocks\CB_Program.cs" />
     <Compile Include="CodeBlocks\CodeBlock.cs" />
+    <Compile Include="Exceptions\AST_BadFormatException.cs" />
     <Compile Include="Exceptions\AST_EmptyInputException.cs" />
     <Compile Include="Exceptions\AST_Exception.cs" />
     <Compile Include="Exceptions\AST_WrongDirectiveException.cs" />

@@ -42,7 +42,10 @@ namespace SALO_Compiler
 			try
 			{
 				Builder_Global builder_Global = new Builder_Global(utf8src);
-				builder_Global.AST.Print("");
+				string ast = "";
+				builder_Global.AST.Print(ref ast);
+				Console.WriteLine("AST:");
+				Console.WriteLine(ast);
 			}
 			catch(SALO_Exception e)
 			{

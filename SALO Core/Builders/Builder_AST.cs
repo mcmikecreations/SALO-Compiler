@@ -11,9 +11,9 @@ namespace SALO_Core.Builders
 	public class Builder_AST
 	{
 		protected AST_Node head;
-		public void Print(string indent)
+		public void Print(ref string output)
 		{
-			head.Print(indent, true);
+			head.Print("", true, ref output);
 		}
 		public Builder_AST(string translatedInput)
 		{

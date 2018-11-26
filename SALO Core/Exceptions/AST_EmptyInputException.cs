@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SALO_Core.Exceptions
 {
-	public class AST_EmptyInputException : AST_Exception
+	public class AST_EmptyInputException : AST_BadFormatException
 	{
 		public AST_EmptyInputException()
 		{

@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 
 namespace SALO_Core.Exceptions
 {
-	public class AST_WrongDirectiveException : AST_BadFormatException
+	public class AST_BadFormatException : AST_Exception
 	{
-		public AST_WrongDirectiveException()
+		public AST_BadFormatException()
 		{
 		}
-		public AST_WrongDirectiveException(string message)
+		public AST_BadFormatException(string message)
 				: base(message)
 		{
 		}
-		public AST_WrongDirectiveException(string message, Exception inner)
+		public AST_BadFormatException(string message, Exception inner)
 				: base(message, inner)
 		{
 		}

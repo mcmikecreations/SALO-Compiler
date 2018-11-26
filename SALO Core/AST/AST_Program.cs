@@ -10,6 +10,9 @@ namespace SALO_Core.AST
 {
 	public class AST_Program : AST_Node
 	{
+		public static readonly string separator_ast = "₴ \r\n\t";
+		public static readonly string separator_ast_nospace = "₴\r\n\t";
+		public static readonly string separator_line = "\r\n";
 		public override void Parse(string input)
 		{
 			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
@@ -18,7 +21,7 @@ namespace SALO_Core.AST
 			while(i < input.Length)
 			{
 				//Get to the first non-space character
-				while (i < input.Length && " \r\n\t".Contains(input[i])) ++i;
+				while (i < input.Length && separator_ast.Contains(input[i])) ++i;
 				if (i >= input.Length) break;
 				if(input.IndexOf("#", i) == i)
 				{
@@ -45,38 +48,129 @@ namespace SALO_Core.AST
 					}
 					childNodes.AddLast(new AST_Directive(this, val));
 				}
+				else if(input.IndexOf("/", i) == i)
+				{
+					if(input.IndexOf("/", i + 1) == i + 1)
+					{
+						//Single-line comment
+						string val = "";
+						while (!(separator_line.Contains(input[i])))
+						{
+							val += input[i];
+							++i;
+							if (i >= input.Length) break;
+						}
+						childNodes.AddLast(new AST_Comment(this, val));
+					}
+					else if(input.IndexOf("*", i) == i + 1)
+					{
+						//Multiline comment
+						int end = input.IndexOf("*/", i);
+						if (end == -1) end = input.Length - 1;
+						else ++end;
+						string val = input.Substring(i, end - i + 1);
+						childNodes.AddLast(new AST_Comment(this, val));
+						i += val.Length;
+					}
+					else
+					{
+						//TODO - something else with '/' char
+						++i;
+					}
+				}
 				else
 				{
-					string val = "";
-					while (!(" \r\n\t".Contains(input[i])))
+					bool isForV = false;
+					//It's a variable or a function declaration
+					//TODO - add more stuff with access levels
+					int j = -1;
+					if (input.IndexOf("shared", i) == i)
 					{
-						val += input[i];
-						++i;
-						if (i >= input.Length) break;
+						j = i + "shared".Length + 1;
+						isForV = true;
 					}
-					childNodes.AddLast(new AST_Unknown(this, val));
+					else if (input.IndexOf("private", i) == i)
+					{
+						j = i + "private".Length + 1;
+						isForV = true;
+					}
+					if (isForV)
+					{
+						//TODO - do checks for other function types
+						if (input.IndexOf("function", j) == j)
+						{
+							int k = j + "function".Length + 1;
+
+							if (k >= input.Length)
+								throw new AST_BadFormatException("Failed to parse function name",
+											new ArgumentOutOfRangeException("input", "Reached the end of input"));
+							if (!(char.IsLetter(input[k]) || AST_Expression.naming_ast.Contains(input[k])))
+								throw new AST_BadFormatException("Function name not allowed",
+											new FormatException("Function name should start with a letter or " + AST_Expression.naming_ast));
+							string nm = "";
+							while (char.IsLetterOrDigit(input[k]) || AST_Expression.naming_ast.Contains(input[k]))
+							{
+								nm += input[k];
+								++k;
+								if (k >= input.Length) break;
+							}
+							string funcend = "ends " + nm;
+							int end = input.IndexOf(funcend, k);
+							if (end == -1)
+							{
+								throw new AST_BadFormatException("Failed to find a corresponding end to function start",
+											new FormatException("No corresponding ends for function " + nm));
+							}
+							end += funcend.Length;
+							string function = input.Substring(i, end - i);
+							childNodes.AddLast(new AST_Function(this, function));
+							i = end;
+							continue;
+						}
+						else throw new AST_BadFormatException("Failed to parse input");
+						//TODO - do checks for variables
+					}
+
+					int expInd = input.IndexOf('₴', i);
+					if (expInd != -1)
+					{
+						string val = input.Substring(i, expInd - i + 1);
+						childNodes.AddLast(new AST_Expression(this, val));
+						i += val.Length;
+					}
+					else
+					{
+						string val = "";
+						while (!(separator_line.Contains(input[i])))
+						{
+							val += input[i];
+							++i;
+							if (i >= input.Length) break;
+						}
+						childNodes.AddLast(new AST_Unknown(this, val));
+					}
 				}
 			}
 		}
-		public override void Print(string indent, bool last)
+		public override void Print(string indent, bool last, ref string output)
 		{
-			Console.Write(indent);
+			output += indent;
 			if (last)
 			{
-				Console.Write("\\-");
+				output += "\\-";
 				indent += "  ";
 			}
 			else
 			{
-				Console.Write("|-");
+				output += "|-";
 				indent += "| ";
 			}
-			Console.WriteLine("Program");
+			output += "Program\r\n";
 			if (childNodes != null)
 			{
 				for (LinkedListNode<AST_Node> ch = childNodes.First; ch != null; ch = ch.Next)
 				{
-					ch.Value.Print(indent, ch.Next == null);
+					ch.Value.Print(indent, ch.Next == null, ref output);
 				}
 			}
 		}

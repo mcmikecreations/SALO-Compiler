@@ -15,7 +15,18 @@ namespace SALO_Core.Tools
 			Exception ex = e;
 			while (ex != null)
 			{
-				Console.Error.WriteLine("Error caught: " + ex.Message);
+				if(ex is AST_Exception)
+				{
+					Console.Error.WriteLine("AST Error caught: " + ex.Message);
+				}
+				else if(ex is SALO_Exception)
+				{
+					Console.Error.WriteLine("SALO Error caught: " + ex.Message);
+				}
+				else
+				{
+					Console.Error.WriteLine("Error caught: " + ex.Message);
+				}
 				ex = ex.InnerException;
 			}
 		}

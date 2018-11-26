@@ -30,25 +30,25 @@ namespace SALO_Core.AST
 			}
 			this.directive_Type = AST_Directive_Type.define;
 		}
-		public override void Print(string indent, bool last)
+		public override void Print(string indent, bool last, ref string output)
 		{
-			Console.Write(indent);
+			output += indent;
 			if (last)
 			{
-				Console.Write("\\-");
+				output += "\\-";
 				indent += "  ";
 			}
 			else
 			{
-				Console.Write("|-");
+				output += "|-";
 				indent += "| ";
 			}
-			Console.WriteLine("Define " + identifier + " " + (token != null ? token : ""));
+			output += "Define " + identifier + " " + (token ?? "") + "\r\n";
 			if(childNodes != null)
 			{
 				for (LinkedListNode<AST_Node> ch = childNodes.First; ch != null; ch = ch.Next)
 				{
-					ch.Value.Print(indent, ch.Next == null);
+					ch.Value.Print(indent, ch.Next == null, ref output);
 				}
 			}
 		}
