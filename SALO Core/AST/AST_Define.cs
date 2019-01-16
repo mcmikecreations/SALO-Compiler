@@ -10,15 +10,16 @@ namespace SALO_Core.AST
 {
 	public class AST_Define : AST_Directive
 	{
-		protected string identifier;
-		protected string token;
-		public override void Parse(string input)
+		public string identifier { get; protected set; }
+		public string token { get; protected set; }
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
+			if (string.IsNullOrWhiteSpace(input))
+				throw new AST_EmptyInputException("Provided string is empty", charIndex);
 			int identLength = input.IndexOf(' ');
 			if (identLength < 1)
 			{
-				identifier = input;
+				identifier = input.TrimStart(' ');
 				token = null;
 			}
 			else
@@ -52,7 +53,7 @@ namespace SALO_Core.AST
 				}
 			}
 		}
-		public AST_Define(AST_Node parent, string input) : base(parent, input)
+		public AST_Define(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

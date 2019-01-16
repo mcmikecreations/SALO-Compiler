@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using SALO_Core.Builders.Settings;
 using SALO_Core.Exceptions;
+using SALO_Core.Tools;
 
 namespace SALO_Core.Builders
 {
@@ -25,10 +26,12 @@ namespace SALO_Core.Builders
 			{
 				if(!string.IsNullOrWhiteSpace(nt.locale) && !string.IsNullOrWhiteSpace(nt.translated))
 				{
-					int ind = translated.IndexOf(nt.locale);
+					//int ind = translated.IndexOf(nt.locale);
 					translated = translated.Replace(nt.locale, nt.translated);
 				}
 			}
+			
+			translated = Translitor.Translit(translated);
 		}
 	}
 }

@@ -10,15 +10,16 @@ namespace SALO_Core.AST.Data
 {
 	public class AST_Variable : AST_Data
 	{
-		public override void Parse(string input)
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
+			if (string.IsNullOrWhiteSpace(input))
+				throw new AST_EmptyInputException("Provided string is empty", charIndex);
 			string[] vars = input.Split(AST_Program.separator_ast.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 			if (vars.Length != 2)
 			{
-				if (!(input == "void"))
+				if (!(vars.Length == 1 && vars[0] == "void"))
 					throw new AST_BadFormatException("Input parameter was given in a wrong format: " + input,
-								new FormatException("Parameter format is <type> <name>₴"));
+								new FormatException("Parameter format is <type> <name>₴"), charIndex);
 			}
 			//TODO - allow custom types, created by user
 			switch (vars[0])
@@ -40,13 +41,14 @@ namespace SALO_Core.AST.Data
 					dataType = DataType.Bool;
 					break;
 				default:
-					throw new AST_BadFormatException("Format " + vars[0] + " is not supported");
+					throw new AST_BadFormatException("Format " + vars[0] + " is not supported", charIndex);
 			}
 			if(vars.Length == 2)
 			{
 				if (!(char.IsLetter(vars[1][0]) || AST_Expression.naming_ast.Contains(vars[1][0])))
 					throw new AST_BadFormatException("Variable name not allowed",
-								new FormatException("Variable name should start with a letter or " + AST_Expression.naming_ast));
+								new FormatException("Variable name should start with a letter or " + AST_Expression.naming_ast),
+								charIndex + vars[0].Length + 1);
 				data = vars[1];
 			}
 		}
@@ -72,7 +74,7 @@ namespace SALO_Core.AST.Data
 				}
 			}
 		}
-		public AST_Variable(AST_Node parent, string input) : base(parent, input)
+		public AST_Variable(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

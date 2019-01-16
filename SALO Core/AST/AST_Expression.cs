@@ -31,26 +31,34 @@ namespace SALO_Core.AST
 	public class AST_Expression : AST_Node
 	{
 		public static readonly string naming_ast = "_";
-		public static readonly AST_Operator[] operators_ast =
-		{
-			new AST_Operator("++", 1, false, true),
-			new AST_Operator("--", 1, false, true),
-			new AST_Operator("( )", 2, false, true),
+        public static readonly AST_Operator[] operators_ast =
+        {
+            new AST_Operator("+", 2, false, true),
+            new AST_Operator("return", 1, true, true),
+            new AST_Operator("=", 2, false, true),
+			//new AST_Operator("++", 1, false, true),
+			//new AST_Operator("--", 1, false, true),
+			new AST_Operator("( )", 1, false, true),
+			new AST_Operator("[ ]", 1, false, true),
+
 			//TODO - classes
 			//new AST_Operator(".", 2, false, true),
 			//Not supported in Ukrainian keyboard
 			//new TAST_Operator("->", 2, false, true),
-			new AST_Operator("++", 1, true, false),
-			new AST_Operator("--", 1, true, false),
-			new AST_Operator("+", 1, false, false),
-			new AST_Operator("-", 1, false, false),
-			new AST_Operator("!", 1, false, false),
-			new AST_Operator("~", 1, false, false),
+
+			//new AST_Operator("++", 1, true, false),
+			//new AST_Operator("--", 1, true, false),
+			//new AST_Operator("+", 1, false, false),
+			//new AST_Operator("-", 1, false, false),
+			//new AST_Operator("!", 1, false, false),
+			//new AST_Operator("~", 1, false, false),
 		};
-		public override void Parse(string input)
+        public List<string> nodes { get; protected set; }
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
-			if (!input.EndsWith("₴")) throw new AST_BadFormatException("Provided string is not ₴ terminated");
+			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty", charIndex);
+			if (!input.EndsWith("₴"))
+				throw new AST_BadFormatException("Provided string is not ₴ terminated", charIndex + input.Length - 1);
 			LinkedList<string> items = new LinkedList<string>();
 			int i = 0;
 			while (i < input.Length)
@@ -132,11 +140,17 @@ namespace SALO_Core.AST
 							items.AddLast(input[i].ToString());
 							++i;
 						}
-						else throw new AST_BadFormatException("Error parsing input: unknown character " + input[i]);
+						else throw new AST_BadFormatException("Error parsing input: unknown character " + input[i], charIndex + i);
 					}
 				}
 			}
-		}
+            if (items.Count > 0)
+            {
+                nodes = items.ToList();
+            }
+            else nodes = null;
+            childNodes = null;
+        }
 		public override void Print(string indent, bool last, ref string output)
 		{
 			output += indent;
@@ -151,15 +165,24 @@ namespace SALO_Core.AST
 				indent += "| ";
 			}
 			output += "Expression:\r\n";
-			if (childNodes != null)
+			if (nodes != null)
 			{
-				for (LinkedListNode<AST_Node> ch = childNodes.First; ch != null; ch = ch.Next)
-				{
-					ch.Value.Print(indent, ch.Next == null, ref output);
-				}
-			}
-		}
-		public AST_Expression(AST_Node parent, string input) : base(parent, input)
+				foreach(string s in nodes)
+                {
+                    output += indent + s + "\r\n";
+                }
+            }
+            if (childNodes != null)
+            {
+                output += indent + "Children??" + "\r\n";
+                for (LinkedListNode<AST_Node> ch = childNodes.First; ch != null; ch = ch.Next)
+                {
+                    ch.Value.Print(indent, ch.Next == null, ref output);
+                }
+                throw new AST_Exception("Function child nodes are not null, although it doesn't use them", -1);
+            }
+        }
+		public AST_Expression(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

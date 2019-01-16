@@ -21,7 +21,7 @@ namespace SALO_Core.AST.Data
 		protected string data;
 		public DataType DataType => dataType;
 		public string Data => data;
-		public AST_Data(AST_Node parent, string input) : base(parent, input)
+		public AST_Data(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

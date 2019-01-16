@@ -10,10 +10,11 @@ namespace SALO_Core.AST
 {
 	class AST_Unknown : AST_Node
 	{
-		protected string text;
-		public override void Parse(string input)
+		public string text { get; protected set; }
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
+			if (string.IsNullOrWhiteSpace(input))
+				throw new AST_EmptyInputException("Provided string is empty", charIndex);
 			text = input;
 		}
 		public override void Print(string indent, bool last, ref string output)
@@ -38,7 +39,7 @@ namespace SALO_Core.AST
 				}
 			}
 		}
-		public AST_Unknown(AST_Node parent, string input) : base(parent, input)
+		public AST_Unknown(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

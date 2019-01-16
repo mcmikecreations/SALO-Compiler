@@ -14,13 +14,14 @@ namespace SALO_Core.AST
 		Single,
 		Multi
 	}
-	class AST_Comment : AST_Node
+	public class AST_Comment : AST_Node
 	{
 		protected AST_Comment_Type comment_Type;
-		protected List<string> text;
-		public override void Parse(string input)
+		public List<string> text { get; protected set; }
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
+			if (string.IsNullOrWhiteSpace(input))
+				throw new AST_EmptyInputException("Provided string is empty", charIndex);
 			string res = "";
 			if (input.StartsWith("//"))
 			{
@@ -30,7 +31,10 @@ namespace SALO_Core.AST
 				int endN = res.IndexOf('\n');
 				if (endR != -1 && endN != endR + 1)
 				{
-					throw new AST_BadFormatException("\\r encountered without \\n", new FormatException());
+					throw new AST_BadFormatException(
+						"\\r encountered without \\n", 
+						new FormatException(), 
+						charIndex + 2 + endR);
 				}
 				if (endR != -1)
 				{
@@ -40,8 +44,10 @@ namespace SALO_Core.AST
 				{
 					res = res.Remove(endN);
 				}
-				text = new List<string>();
-				text.Add(res);
+				text = new List<string>
+				{
+					res
+				};
 			}
 			else if (input.StartsWith("/*"))
 			{
@@ -101,7 +107,7 @@ namespace SALO_Core.AST
 				}
 			}
 		}
-		public AST_Comment(AST_Node parent, string input) : base(parent, input)
+		public AST_Comment(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

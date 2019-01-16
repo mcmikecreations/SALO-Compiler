@@ -18,9 +18,10 @@ namespace SALO_Core.AST
 	{
 		protected AST_Directive_Type directive_Type;
 		public AST_Directive_Type Directive_Type { get { return directive_Type; } }
-		public override void Parse(string input)
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
+			if (string.IsNullOrWhiteSpace(input))
+				throw new AST_EmptyInputException("Provided string is empty", charIndex);
 			if (input.StartsWith("#define "))
 			{
 				directive_Type = AST_Directive_Type.define;
@@ -31,26 +32,27 @@ namespace SALO_Core.AST
 			}
 			else
 			{
-				throw new AST_WrongDirectiveException(input + " is not a valid define directive");
+				throw new AST_WrongDirectiveException(input + " is not a valid define directive", charIndex);
 			}
+			//TODO - change static string defines with a constant
 			switch (directive_Type)
 			{
 				case AST_Directive_Type.define:
 					{
 						string subinput = input.Remove(0, "#define ".Length);
 						if (string.IsNullOrWhiteSpace(subinput))
-							throw new AST_EmptyInputException("Provided string is empty");
+							throw new AST_EmptyInputException("Provided string is empty", charIndex + "#define ".Length);
 						childNodes = new LinkedList<AST_Node>();
-						childNodes.AddLast(new AST_Define(this, subinput));
+						childNodes.AddLast(new AST_Define(this, subinput, charIndex + "#define ".Length));
 						break;
 					}
 				case AST_Directive_Type.include:
 					{
 						string subinput = input.Remove(0, "#merge ".Length);
 						if (string.IsNullOrWhiteSpace(subinput))
-							throw new AST_EmptyInputException("Provided string is empty");
+							throw new AST_EmptyInputException("Provided string is empty", charIndex + "#merge ".Length);
 						childNodes = new LinkedList<AST_Node>();
-						childNodes.AddLast(new AST_Include(this, subinput));
+						childNodes.AddLast(new AST_Include(this, subinput, charIndex + "#merge ".Length));
 						break;
 					}
 				default:
@@ -81,7 +83,7 @@ namespace SALO_Core.AST
 				}
 			}
 		}
-		public AST_Directive(AST_Node parent, string input) : base(parent, input)
+		public AST_Directive(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

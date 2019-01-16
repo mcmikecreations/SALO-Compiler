@@ -221,8 +221,13 @@ namespace SALO_Core.Tools
 							}
 							break;
 						}
-					case '\'':
+					case '`':
 						{
+							break;
+						}
+					default:
+						{
+							output += word[i];
 							break;
 						}
 				}

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using SALO_Core.AST;
+using SALO_Core.CodeBlocks;
 
 namespace SALO_Core.Builders
 {
@@ -15,9 +16,13 @@ namespace SALO_Core.Builders
 		{
 			head.Print("", true, ref output);
 		}
+		public void Accept(CB cb)
+		{
+			head.Accept(cb);
+		}
 		public Builder_AST(string translatedInput)
 		{
-			head = new AST_Program(translatedInput);
+			head = new AST_Program(translatedInput, 0);
 		}
 	}
 }

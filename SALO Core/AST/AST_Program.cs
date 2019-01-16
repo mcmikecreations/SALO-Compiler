@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using SALO_Core.CodeBlocks;
 using SALO_Core.Exceptions;
 
 namespace SALO_Core.AST
@@ -13,9 +13,9 @@ namespace SALO_Core.AST
 		public static readonly string separator_ast = "₴ \r\n\t";
 		public static readonly string separator_ast_nospace = "₴\r\n\t";
 		public static readonly string separator_line = "\r\n";
-		public override void Parse(string input)
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
+			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty", charIndex);
 			childNodes = new LinkedList<AST_Node>();
 			int i = 0;
 			while(i < input.Length)
@@ -29,6 +29,7 @@ namespace SALO_Core.AST
 					string val = "";
 					//Get directive value
 					bool nextChar = true;
+					int valStart = i;
 					while (nextChar)
 					{
 						if (input[i] == '\r' || input[i] == '\n') break;
@@ -46,7 +47,7 @@ namespace SALO_Core.AST
 						}
 						++i;
 					}
-					childNodes.AddLast(new AST_Directive(this, val));
+					childNodes.AddLast(new AST_Directive(this, val, charIndex + i));
 				}
 				else if(input.IndexOf("/", i) == i)
 				{
@@ -54,13 +55,14 @@ namespace SALO_Core.AST
 					{
 						//Single-line comment
 						string val = "";
+						int commentStart = i;
 						while (!(separator_line.Contains(input[i])))
 						{
 							val += input[i];
 							++i;
 							if (i >= input.Length) break;
 						}
-						childNodes.AddLast(new AST_Comment(this, val));
+						childNodes.AddLast(new AST_Comment(this, val, commentStart));
 					}
 					else if(input.IndexOf("*", i) == i + 1)
 					{
@@ -69,7 +71,7 @@ namespace SALO_Core.AST
 						if (end == -1) end = input.Length - 1;
 						else ++end;
 						string val = input.Substring(i, end - i + 1);
-						childNodes.AddLast(new AST_Comment(this, val));
+						childNodes.AddLast(new AST_Comment(this, val, i));
 						i += val.Length;
 					}
 					else
@@ -103,10 +105,10 @@ namespace SALO_Core.AST
 
 							if (k >= input.Length)
 								throw new AST_BadFormatException("Failed to parse function name",
-											new ArgumentOutOfRangeException("input", "Reached the end of input"));
+											new ArgumentOutOfRangeException("input", "Reached the end of input"), charIndex + input.Length - 1);
 							if (!(char.IsLetter(input[k]) || AST_Expression.naming_ast.Contains(input[k])))
 								throw new AST_BadFormatException("Function name not allowed",
-											new FormatException("Function name should start with a letter or " + AST_Expression.naming_ast));
+											new FormatException("Function name should start with a letter or " + AST_Expression.naming_ast), charIndex + k);
 							string nm = "";
 							while (char.IsLetterOrDigit(input[k]) || AST_Expression.naming_ast.Contains(input[k]))
 							{
@@ -119,15 +121,15 @@ namespace SALO_Core.AST
 							if (end == -1)
 							{
 								throw new AST_BadFormatException("Failed to find a corresponding end to function start",
-											new FormatException("No corresponding ends for function " + nm));
+											new FormatException("No corresponding ends for function " + nm), charIndex + input.Length - 1);
 							}
 							end += funcend.Length;
 							string function = input.Substring(i, end - i);
-							childNodes.AddLast(new AST_Function(this, function));
+							childNodes.AddLast(new AST_Function(this, function, i));
 							i = end;
 							continue;
 						}
-						else throw new AST_BadFormatException("Failed to parse input");
+						else throw new AST_BadFormatException("Failed to parse input", charIndex + j);
 						//TODO - do checks for variables
 					}
 
@@ -135,19 +137,20 @@ namespace SALO_Core.AST
 					if (expInd != -1)
 					{
 						string val = input.Substring(i, expInd - i + 1);
-						childNodes.AddLast(new AST_Expression(this, val));
+						childNodes.AddLast(new AST_Expression(this, val, i));
 						i += val.Length;
 					}
 					else
 					{
 						string val = "";
+						int startPos = charIndex + i;
 						while (!(separator_line.Contains(input[i])))
 						{
 							val += input[i];
 							++i;
 							if (i >= input.Length) break;
 						}
-						childNodes.AddLast(new AST_Unknown(this, val));
+						childNodes.AddLast(new AST_Unknown(this, val, startPos));
 					}
 				}
 			}
@@ -174,7 +177,7 @@ namespace SALO_Core.AST
 				}
 			}
 		}
-		public AST_Program(string input) : base(null, input)
+		public AST_Program(string input, int charIndex) : base(null, input, charIndex)
 		{
 
 		}

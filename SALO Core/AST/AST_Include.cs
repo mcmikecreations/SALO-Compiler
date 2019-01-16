@@ -10,12 +10,22 @@ namespace SALO_Core.AST
 {
 	public class AST_Include : AST_Directive
 	{
-		protected string file;
-		public override void Parse(string input)
+		public string file { get; protected set; }
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
-			file = input;
+			if (string.IsNullOrWhiteSpace(input))
+				throw new AST_EmptyInputException("Provided string is empty", charIndex);
 
+			//TODO - perform include or whatever
+			if (input[0] == '\"' && input[input.Length - 1] == '\"')
+			{
+				input = input.Substring(1, input.Length - 2);
+			}
+			else if(input[0] == '<' && input[input.Length - 1] == '>')
+			{
+				input = input.Substring(1, input.Length - 2);
+			}
+			file = input;
 			//TODO - check if path is valid
 
 			this.directive_Type = AST_Directive_Type.include;
@@ -42,7 +52,7 @@ namespace SALO_Core.AST
 				}
 			}
 		}
-		public AST_Include(AST_Node parent, string input) : base(parent, input)
+		public AST_Include(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

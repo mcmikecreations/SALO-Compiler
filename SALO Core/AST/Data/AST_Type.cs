@@ -10,14 +10,15 @@ namespace SALO_Core.AST.Data
 {
 	public class AST_Type : AST_Data
 	{
-		public override void Parse(string input)
+		public override void Parse(string input, int charIndex)
 		{
-			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty");
+			if (string.IsNullOrWhiteSpace(input))
+				throw new AST_EmptyInputException("Provided string is empty", charIndex);
 			string[] var = input.Split(AST_Program.separator_ast.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 			if (var.Length != 1)
 			{
 				throw new AST_BadFormatException("Return value was given in a wrong format: " + input,
-							new FormatException("Return value format is <type>₴"));
+							new FormatException("Return value format is <type>₴"), charIndex);
 			}
 			//TODO - allow custom types, created by user
 			switch (var[0])
@@ -38,7 +39,7 @@ namespace SALO_Core.AST.Data
 					dataType = DataType.Bool;
 					break;
 				default:
-					throw new AST_BadFormatException("Format " + var[0] + " is not supported");
+					throw new AST_BadFormatException("Format " + var[0] + " is not supported", charIndex);
 			}
 			data = var[0];
 		}
@@ -64,7 +65,7 @@ namespace SALO_Core.AST.Data
 				}
 			}
 		}
-		public AST_Type(AST_Node parent, string input) : base(parent, input)
+		public AST_Type(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{
 
 		}

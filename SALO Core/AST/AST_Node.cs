@@ -4,18 +4,26 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using SALO_Core.CodeBlocks;
+
 namespace SALO_Core.AST
 {
 	public abstract class AST_Node
 	{
 		protected AST_Node parent;
-		protected LinkedList<AST_Node> childNodes;
-		public abstract void Parse(string input);
+		public LinkedList<AST_Node> childNodes { get; protected set; }
+		public int charIndex { get; protected set; }
+		public abstract void Parse(string input, int charIndex);
 		public abstract void Print(string indent, bool last, ref string output);
-		public AST_Node(AST_Node parent, string input)
+		public void Accept(CB cb)
+		{
+			cb.Parse((dynamic)this);
+		}
+		public AST_Node(AST_Node parent, string input, int charIndex)
 		{
 			this.parent = parent;
-			Parse(input);
+			this.charIndex = charIndex;
+			Parse(input, charIndex);
 		}
 	}
 }
