@@ -34,6 +34,7 @@ namespace SALO_Core.AST
         public static readonly AST_Operator[] operators_ast =
         {
             new AST_Operator("+", 2, false, true),
+            new AST_Operator("-", 2, false, true),
             new AST_Operator("return", 1, true, true),
             new AST_Operator("=", 2, false, true),
 			//new AST_Operator("++", 1, false, true),
@@ -140,7 +141,10 @@ namespace SALO_Core.AST
 							items.AddLast(input[i].ToString());
 							++i;
 						}
-						else throw new AST_BadFormatException("Error parsing input: unknown character " + input[i], charIndex + i);
+						else
+                            throw new AST_BadFormatException(
+                            "Error parsing input. Unknown character " + input[i], 
+                            charIndex + i);
 					}
 				}
 			}
@@ -169,7 +173,7 @@ namespace SALO_Core.AST
 			{
 				foreach(string s in nodes)
                 {
-                    output += indent + s + "\r\n";
+                    output += indent + "\t\t" + s + "\r\n";
                 }
             }
             if (childNodes != null)

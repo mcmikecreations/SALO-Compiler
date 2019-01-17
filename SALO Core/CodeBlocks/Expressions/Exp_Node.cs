@@ -32,8 +32,8 @@ namespace SALO_Core.CodeBlocks.Expressions
             if (input == null || input.Count == 0)
                 throw new AST_EmptyInputException("Can't parse expression. Input list is empty.", charIndex);
             this.input = input;
-            List<string> l = new List<string>();
-            List<string> r = new List<string>();
+            List<string> l;
+            List<string> r;
             List<string> temp = new List<string>();
             int i = 0;
 
@@ -51,8 +51,12 @@ namespace SALO_Core.CodeBlocks.Expressions
                     }
                 }
             }
+            var operPrefix = AST_Expression.operators_ast.Where((a) => a.isPrefix).ToList();
+            var operSuffix = AST_Expression.operators_ast.Where((a) => !a.isPrefix).ToList();
+            var operInfix = AST_Expression.operators_ast.Where((a) => a.operandCount == 2).ToList();
 
             //Get left child node
+            //Check sequence: brackets, TODO - equals sign, prefix operations, infix operations, suffix operations
             if (bracketTypesStart.IndexOf(input[i]) != -1)
             {
                 //Input expression starts with an opening bracket, find corresponding end
@@ -60,6 +64,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                 ++charIndex;
                 ++i;
                 leftIndex = charIndex;
+                //TODO - rewrite this code with a stack instead of an increment/decrement system
                 while (i < input.Count)
                 {
                     if (bracketTypesStart.IndexOf(input[i]) != -1) bracket_count++;
@@ -76,6 +81,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     temp = new List<string>();
                     if (i >= input.Count)
                     {
+                        //We reached the end of the expression
                         //TODO - decide between "(" and "( )"
                         exp_Data = input[0];
                         exp_Type = Exp_Type.Bracket;
@@ -90,12 +96,40 @@ namespace SALO_Core.CodeBlocks.Expressions
                             exp_Type = Exp_Type.Operator;
                             charIndex += input[i].Length;
                             rightIndex = charIndex;
-                            for (i = i + 1; i < input.Count; ++i)
+                            if (i + 1 >= input.Count)
                             {
-                                temp.Add(input[i]);
-                                charIndex += input[i].Length;
+                                //Check for a suffix and infix operation
+                                if (operSuffix.FindIndex(a => a.oper == input[i]) != -1)
+                                {
+                                    //It is a suffix operation
+                                    r = null;
+                                }
+                                else
+                                {
+                                    throw new AST_BadFormatException(
+                                        input[i] + " is not a suffix operaiton", 
+                                        charIndex);
+                                }
                             }
-                            r = temp;
+                            else
+                            {
+                                if (operInfix.FindIndex(a => a.oper == input[i]) != -1)
+                                {
+                                    //It is an infix operation
+                                    for (i = i + 1; i < input.Count; ++i)
+                                    {
+                                        temp.Add(input[i]);
+                                        charIndex += input[i].Length;
+                                    }
+                                    r = temp;
+                                }
+                                else
+                                {
+                                    throw new AST_BadFormatException(
+                                        input[i] + " is not an infix operaiton", 
+                                        charIndex);
+                                }
+                            }
                         }
                         else throw new AST_BadFormatException("Didn\'t find an operation after brackets", charIndex);
                     }
@@ -121,6 +155,22 @@ namespace SALO_Core.CodeBlocks.Expressions
                     exp_Data = input[i];
                     exp_Type = isVar ? Exp_Type.Variable : Exp_Type.Constant;
                 }
+                else if (operInfix.FindIndex(a => a.oper == input[i + 1]) != -1 && i + 2 < input.Count)
+                {
+                    //it is an expression
+                    leftIndex = charIndex;
+                    l = new List<string> { input[i] };
+                    exp_Type = Exp_Type.Operator;
+                    exp_Data = input[i + 1];
+                    charIndex += input[i].Length + input[i + 1].Length;
+                    rightIndex = charIndex;
+                    for (i = i + 2; i < input.Count; ++i)
+                    {
+                        temp.Add(input[i]);
+                        charIndex += input[i].Length;
+                    }
+                    r = temp;
+                }
                 else if (isVar && bracketTypesStart.IndexOf(input[i + 1]) != -1)
                 {
                     //It is a function call
@@ -130,6 +180,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     //Function call starts with an opening bracket, find corresponding end
                     int bracket_count = 1;
                     leftIndex = charIndex;
+                    //TODO - rewrite this code with a stack instead of an increment/decrement system
                     while (i < input.Count)
                     {
                         if (bracketTypesStart.IndexOf(input[i]) != -1) bracket_count++;
@@ -140,9 +191,9 @@ namespace SALO_Core.CodeBlocks.Expressions
                         ++i;
                     }
                     ++i;
-                    if(bracket_count == 0)
+                    if (bracket_count == 0)
                     {
-                        if(i >= input.Count)
+                        if (i >= input.Count)
                         {
                             //Input is a function call
                             l = temp;
@@ -158,18 +209,36 @@ namespace SALO_Core.CodeBlocks.Expressions
                             temp.Insert(0, input[funcIndex]);
                             temp.Add(input[i - 1]);
                             l = temp;
+                            bool isInfix = false, isSuffix = false;
+                            if (operInfix.FindIndex(a => a.oper == input[i]) != -1)
+                            {
+                                isInfix = true;
+                            }
+                            if (operSuffix.FindIndex(a => a.oper == input[i]) != -1)
+                            {
+                                isSuffix = true;
+                            }
                             exp_Data = input[i];
                             exp_Type = Exp_Type.Operator;
-                            //Get right child node
-                            temp = new List<string>();
-                            charIndex += input[i].Length;
-                            rightIndex = charIndex;
-                            for (i = i + 1; i < input.Count; ++i)
+                            if (isInfix && i + 1 < input.Count)
                             {
-                                temp.Add(input[i]);
+                                //It is an infix operation, get right child node
+                                temp = new List<string>();
                                 charIndex += input[i].Length;
+                                rightIndex = charIndex;
+                                for (i = i + 1; i < input.Count; ++i)
+                                {
+                                    temp.Add(input[i]);
+                                    charIndex += input[i].Length;
+                                }
+                                r = temp;
                             }
-                            r = temp;
+                            else if (isSuffix && i + 1 >= input.Count)
+                            {
+                                //It is a suffix operation
+                                r = null;
+                            }
+                            else throw new AST_BadFormatException(input[i] + " is not a suffix operaiton", charIndex);
                         }
                         else throw new AST_BadFormatException("Unknown expression sequence", charIndex);
                     }
@@ -180,10 +249,71 @@ namespace SALO_Core.CodeBlocks.Expressions
                             charIndex);
                     }
                 }
+                else if (operPrefix.FindIndex(a => a.oper == input[i]) != -1)
+                {
+                    //It is a prefix operation
+                    charIndex += input[i].Length;
+                    int operIndex = i;
+                    ++i;
+                    if (bracketTypesStart.IndexOf(input[i]) != -1)
+                    {
+                        //right child is a compound expression, we should find the right expression
+                        charIndex += input[i].Length;
+                        ++i;
+                        int bracket_count = 1;
+                        rightIndex = charIndex;
+                        //TODO - rewrite this code with a stack instead of an increment/decrement system
+                        while (i < input.Count)
+                        {
+                            if (bracketTypesStart.IndexOf(input[i]) != -1) bracket_count++;
+                            if (bracketTypesEnd.IndexOf(input[i]) != -1) bracket_count--;
+                            charIndex += input[i].Length;
+                            if (bracket_count == 0) break;
+                            temp.Add(input[i]);
+                            ++i;
+                        }
+                        ++i;
+                        if (bracket_count == 0)
+                        {
+                            if (i >= input.Count)
+                            {
+                                //Everything is good
+                                l = null;
+                                r = temp;
+                                leftIndex = charInd;
+                                exp_Data = input[operIndex];
+                                exp_Type = Exp_Type.Operator;
+                            }
+                            else
+                            {
+                                throw new AST_BadFormatException("This operation is not supported", charIndex);
+                            }
+                        }
+                        else
+                        {
+                            throw new AST_BadFormatException(
+                                "Didn\'t find a corresponding closing bracket for " + input[operIndex + 1],
+                                charIndex);
+                        }
+                    }
+                    else
+                    {
+                        rightIndex = charIndex;
+                        for (; i < input.Count; ++i)
+                        {
+                            temp.Add(input[i]);
+                            charIndex += input[i].Length;
+                        }
+                        l = null;
+                        r = temp;
+                        exp_Data = input[operIndex];
+                        exp_Type = Exp_Type.Operator;
+                    }
+                }
                 else throw new AST_BadFormatException("Unknown expression sequence", charIndex);
             }
 
-            if(exp_Type == Exp_Type.None || exp_Data == null)
+            if (exp_Type == Exp_Type.None || exp_Data == null)
             {
                 throw new AST_Exception("Failed to parse expression node", charInd);
             }
@@ -191,7 +321,7 @@ namespace SALO_Core.CodeBlocks.Expressions
             {
                 left = new Exp_Node(l, leftIndex);
             }
-            if(r != null)
+            if (r != null)
             {
                 right = new Exp_Node(r, rightIndex);
             }
@@ -254,7 +384,7 @@ namespace SALO_Core.CodeBlocks.Expressions
             {
                 left.Print(indent, right == null, ref output);
             }
-            if(right != null)
+            if (right != null)
             {
                 right.Print(indent, true, ref output);
             }

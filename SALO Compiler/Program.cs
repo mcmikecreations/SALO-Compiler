@@ -63,14 +63,6 @@ namespace SALO_Compiler
 				{
 					File.WriteAllText(fileName + "_translated.txt", builder_Global.Translator.Translated);
 				}
-#if DEBUG
-				string ast1 = "";
-				builder_Global.AST.Print(ref ast1);
-				Console.WriteLine("AST:");
-				Console.WriteLine(ast1);
-				Console.WriteLine("ASM:");
-				Console.WriteLine(builder_Global.Compiler.Result);
-#endif
 				if ((args.Length > 1 && args[1] == "-ast") || 
 					(args.Length > 2 && args[2] == "-ast") || 
 					(args.Length > 3 && args[3] == "-ast"))

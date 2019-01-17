@@ -89,9 +89,11 @@ namespace SALO_Core.CodeBlocks
         public override void Parse(AST_Expression input)
         {
             Exp exp = new Exp(input.nodes);
+#if DEBUG
             string output = "";
             exp.Print("", false, ref output);
-            Console.Write(output);
+            Console.WriteLine(output);
+#endif
         }
     }
 }

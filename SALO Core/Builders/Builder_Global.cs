@@ -36,9 +36,11 @@ namespace SALO_Core.Builders
 				try
 				{
 					Translator = new Builder_Translation(input, LocaleStrings);
-					Console.WriteLine();
+#if DEBUG
+                    Console.WriteLine();
 					Console.WriteLine(Translator.Translated);
-				}
+#endif
+                }
 				catch (SALO_Exception e)
 				{
 					throw new SALO_Exception("Failed to create Translation builder", e);
@@ -52,7 +54,13 @@ namespace SALO_Core.Builders
 					try
 					{
 						AST = new Builder_AST(Translator.Translated);
-					}
+#if DEBUG
+                        string ast = "";
+                        AST.Print(ref ast);
+                        Console.WriteLine("AST:");
+                        Console.WriteLine(ast);
+#endif
+                    }
 					catch (SALO_Exception e)
 					{
 						//ExceptionHandler.ShowException(e, Translator.Translated);
@@ -67,8 +75,12 @@ namespace SALO_Core.Builders
 						try
 						{
 							Compiler = new Builder_Compile(lang, AST);
-						}
-						catch (SALO_Exception e)
+#if DEBUG
+                            Console.WriteLine("ASM:");
+                            Console.WriteLine(Compiler.Result);
+#endif
+                        }
+                        catch (SALO_Exception e)
 						{
 							throw new SALO_Exception("Failed to create an AST", e);
 						}
