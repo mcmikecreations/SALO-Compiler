@@ -26,6 +26,8 @@ namespace SALO_Core.AST
 		public FunctionType functionType { get; protected set; }
 		public string name { get; protected set; }
 		public LinkedList<AST_Variable> parameters { get; protected set; }
+        //TODO - parse locals
+		public LinkedList<AST_Variable> locals { get; protected set; }
 		public AST_Type retValue { get; protected set; }
 		public LinkedList<AST_Expression> expressions { get; protected set; }
 		public override void Parse(string input, int charIndex)

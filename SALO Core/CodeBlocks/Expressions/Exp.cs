@@ -21,11 +21,19 @@ namespace SALO_Core.CodeBlocks.Expressions
                     "Expression is empty", 
                     new NullReferenceException("Expression piece list is null"), 
                     0);
-            head = new Exp_Node(list, 0);
+            head = new Exp_Node_New(list, 0);
 		}
         public void Print(string indent, bool last, ref string output)
         {
             head.Print(indent, last, ref output);
         }
-	}
+        public void Accept(CB cb)
+        {
+            cb.Parse(this);
+        }
+        public void Simplify()
+        {
+
+        }
+    }
 }

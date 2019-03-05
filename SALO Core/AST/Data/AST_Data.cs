@@ -11,6 +11,7 @@ namespace SALO_Core.AST.Data
 		None,
 		Void,
 		Int32,
+		Int16,
 		Int8,
 		Float32,
 		Bool,

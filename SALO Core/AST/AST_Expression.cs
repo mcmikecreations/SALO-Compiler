@@ -18,14 +18,23 @@ namespace SALO_Core.AST
 	{
 		public string oper;
 		public int operandCount;
-		public bool isPrefix;
+        public int layer;
+        /// <summary>
+        /// true if is prefix, false if is suffix, null otherwise
+        /// </summary>
+		public bool? isPrefix;
 		public bool isLeftToRight;
-		public AST_Operator(string oper, int operandCount, bool isPrefix, bool isLeftToRight)
+        public bool isPaired;
+        public bool toEnd;
+		public AST_Operator(string oper, int operandCount, int layer, bool? isPrefix, bool isLeftToRight, bool isPaired, bool toEnd)
 		{
 			this.oper = oper;
 			this.operandCount = operandCount;
+            this.layer = layer;
 			this.isPrefix = isPrefix;
 			this.isLeftToRight = isLeftToRight;
+            this.isPaired = isPaired;
+            this.toEnd = toEnd;
 		}
 	}
 	public class AST_Expression : AST_Node
@@ -33,14 +42,17 @@ namespace SALO_Core.AST
 		public static readonly string naming_ast = "_";
         public static readonly AST_Operator[] operators_ast =
         {
-            new AST_Operator("+", 2, false, true),
-            new AST_Operator("-", 2, false, true),
-            new AST_Operator("return", 1, true, true),
-            new AST_Operator("=", 2, false, true),
+            new AST_Operator("return", 1, 0, true, true, false, true),
+            new AST_Operator("return", 0, 0, null, true, false, false),
+            new AST_Operator("=", 2, 0, null, true, false, false),
+			new AST_Operator("( )", 1, 1, null, true, true, false),
+			new AST_Operator("[ ]", 1, 1, null, true, true, false),
+            new AST_Operator("*", 2, 2, null, true, false, false),
+            new AST_Operator("/", 2, 2, null, true, false, false),
+            new AST_Operator("-", 2, 3, null, true, false, false),
+            new AST_Operator("+", 2, 3, null, true, false, false),
 			//new AST_Operator("++", 1, false, true),
 			//new AST_Operator("--", 1, false, true),
-			new AST_Operator("( )", 1, false, true),
-			new AST_Operator("[ ]", 1, false, true),
 
 			//TODO - classes
 			//new AST_Operator(".", 2, false, true),

@@ -21,7 +21,7 @@ namespace SALO_Core.Builders
 			localeStrings = locales;
 			original = input;
 			translated = input;
-
+            //TODO - cut out comments
 			foreach(NamesTranslated nt in locales.names_translated)
 			{
 				if(!string.IsNullOrWhiteSpace(nt.locale) && !string.IsNullOrWhiteSpace(nt.translated))

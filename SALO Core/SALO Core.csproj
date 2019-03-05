@@ -65,6 +65,8 @@
     <Compile Include="CodeBlocks\CB.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp_Node.cs" />
+    <Compile Include="CodeBlocks\Expressions\Exp_Node_New.cs" />
+    <Compile Include="CodeBlocks\Expressions\Exp_Type.cs" />
     <Compile Include="Exceptions\ASS\ASS_Exception.cs" />
     <Compile Include="Exceptions\ASS\ASS_WrongNodeException.cs" />
     <Compile Include="Exceptions\AST_BadFormatException.cs" />

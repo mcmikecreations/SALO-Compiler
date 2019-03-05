@@ -9,15 +9,6 @@ using SALO_Core.Exceptions;
 
 namespace SALO_Core.CodeBlocks.Expressions
 {
-    public enum Exp_Type
-    {
-        None,
-        Variable,
-        Constant,
-        Operator,
-        Function,
-        Bracket,
-    }
     public class Exp_Node
     {
         public Exp_Node left { get; protected set; }
@@ -25,6 +16,10 @@ namespace SALO_Core.CodeBlocks.Expressions
         public List<string> input { get; protected set; }
         public string exp_Data { get; protected set; } = null;
         public Exp_Type exp_Type { get; protected set; } = Exp_Type.None;
+        public Exp_Node()
+        {
+
+        }
         public Exp_Node(List<string> input, int charInd)
         {
             int charIndex = charInd, leftIndex = 0, rightIndex = 0;
@@ -51,9 +46,9 @@ namespace SALO_Core.CodeBlocks.Expressions
                     }
                 }
             }
-            var operPrefix = AST_Expression.operators_ast.Where((a) => a.isPrefix).ToList();
-            var operSuffix = AST_Expression.operators_ast.Where((a) => !a.isPrefix).ToList();
-            var operInfix = AST_Expression.operators_ast.Where((a) => a.operandCount == 2).ToList();
+            var operPrefix = AST_Expression.operators_ast.Where((a) => a.isPrefix == true).ToList();
+            var operSuffix = AST_Expression.operators_ast.Where((a) => a.isPrefix == false).ToList();
+            var operInfix = AST_Expression.operators_ast.Where((a) => a.isPrefix == null).ToList();
 
             //Get left child node
             //Check sequence: brackets, TODO - equals sign, prefix operations, infix operations, suffix operations
@@ -326,7 +321,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                 right = new Exp_Node(r, rightIndex);
             }
         }
-        private bool isConstant(string input)
+        public static bool isConstant(string input)
         {
             //TODO - write a correct checker for constant
             int val_i = 0;
@@ -335,7 +330,7 @@ namespace SALO_Core.CodeBlocks.Expressions
             if (float.TryParse(input, out val_f) || int.TryParse(input, out val_i)) return true;
             return false;
         }
-        private bool isOperation(string input)
+        public static bool isOperation(string input)
         {
             foreach (var op in AST_Expression.operators_ast)
             {
@@ -347,7 +342,7 @@ namespace SALO_Core.CodeBlocks.Expressions
             }
             return false;
         }
-        private bool isVariable(string input)
+        public static bool isVariable(string input)
         {
             foreach (var op in AST_Expression.operators_ast)
             {
@@ -388,6 +383,10 @@ namespace SALO_Core.CodeBlocks.Expressions
             {
                 right.Print(indent, true, ref output);
             }
+        }
+        public void Accept(CB cb)
+        {
+            cb.Parse(this);
         }
     }
 }

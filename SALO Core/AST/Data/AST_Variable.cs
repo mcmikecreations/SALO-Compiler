@@ -28,10 +28,13 @@ namespace SALO_Core.AST.Data
 					dataType = DataType.Void;
 					data = "void";
 					break;
-				case "int32":
+                case "int32":
 					dataType = DataType.Int32;
 					break;
-				case "int8":
+                case "int16":
+                    dataType = DataType.Int16;
+                    break;
+                case "int8":
 					dataType = DataType.Int8;
 					break;
 				case "float32":
