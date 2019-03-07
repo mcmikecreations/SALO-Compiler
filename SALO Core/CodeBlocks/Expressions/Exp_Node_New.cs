@@ -18,7 +18,9 @@ namespace SALO_Core.CodeBlocks.Expressions
             public int indexStart, indexEnd;
             public bool isString;
         }
-        public Exp_Node_New(Exp_Node_New left, Exp_Node_New right, List<string> input, string exp_Data, Exp_Type exp_Type)
+        public Exp_Node_New(Exp_Node_New left, Exp_Node_New right, 
+                            List<string> input, 
+                            string exp_Data, Exp_Type exp_Type)
         {
             this.left = left;
             this.right = right;
@@ -28,6 +30,7 @@ namespace SALO_Core.CodeBlocks.Expressions
         }
         private Exp_Node_New(List<Exp_Piece> input, int charInd)
         {
+            //TODO - fix charInd references and broken List<string> input passes
             this.input = null;
             if (input.Count == 1)
             {
@@ -73,24 +76,53 @@ namespace SALO_Core.CodeBlocks.Expressions
             {
                 if (found) break;
                 List<AST_Operator> ops = AST_Expression.operators_ast.Where(a => a.layer == layer).ToList();
+                if (ops.Count == 0) continue;
+                int[] opIndexesLeft = new int[ops.Count];
+                int[] opIndexesRight = new int[ops.Count];
                 int[] opIndexes = new int[ops.Count];
-                for(int j = 0; j < ops.Count; ++j)
+                for (int j = 0; j < ops.Count; ++j)
                 {
+                    opIndexesLeft[j] = -1;
+                    opIndexesRight[j] = -1;
                     opIndexes[j] = -1;
                 }
-                int op = 0;
+                int op = 0, opLeft = 0, opRight = 0;
+                bool opLeftFilled = false, opRightFilled = false;
                 for (int opInd = 0; opInd < ops.Count; ++opInd)
                 {
                     string operation = "";
-                    string[] opPieces = ops[opInd].oper.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    string[] opPieces = ops[opInd].oper.Split(
+                        new char[] { ' ' }, 
+                        StringSplitOptions.RemoveEmptyEntries);
                     operation = opPieces[0];
-                    //TODO - find RightToLeft operators separately and compare their distance to the last element
-                    opIndexes[opInd] = input.FindIndex(a => a.isString && a.inStrg == operation);
-                    if ((opIndexes[op] == -1 || opIndexes[opInd] < opIndexes[op]) && opIndexes[opInd] != -1)
+                    //TODO - DONE - find RightToLeft operators separately and compare their distance to the last element
+                    opIndexesLeft[opInd] = input.FindIndex(a => a.isString && a.inStrg == operation);
+                    opIndexesRight[opInd] = input.FindLastIndex(a => a.isString && a.inStrg == operation);
+                    if ((opIndexesLeft[opLeft] == -1 || 
+                        opIndexesLeft[opInd] < opIndexesLeft[opLeft] || !opLeftFilled) && 
+                        opIndexesLeft[opInd] != -1 && ops[opInd].isLeftToRight)
                     {
                         //Operator exists and is closer to the start of input
-                        op = opInd;
+                        opLeft = opInd;
+                        opLeftFilled = true;
                     }
+                    if((opIndexesRight[opRight] == -1 || 
+                        opIndexesRight[opInd] > opIndexesRight[opRight] || !opRightFilled) &&
+                        opIndexesRight[opInd] != -1 && !ops[opInd].isLeftToRight)
+                    {
+                        opRight = opInd;
+                        opRightFilled = true;
+                    }
+                }
+                if(input.Count - opIndexesRight[opRight] - 1 > opIndexesLeft[opLeft])
+                {
+                    op = opLeft;
+                    opIndexes[op] = opIndexesLeft[op];
+                }
+                else
+                {
+                    op = opRight;
+                    opIndexes[op] = opIndexesRight[op];
                 }
                 if (opIndexes[op] == -1) continue;
 
@@ -160,21 +192,45 @@ namespace SALO_Core.CodeBlocks.Expressions
                         }
                         //Create the content array
                         List<Exp_Piece> content = new List<Exp_Piece>(i - 2 - opIndexes[op]);
-                        for(int j = 0; j < content.Capacity; ++j)
+                        for (int j = 0; j < content.Capacity; ++j)
                         {
                             content.Add(input[opIndexes[op] + 1 + j]);
                         }
                         input.RemoveRange(opIndexes[op], i - opIndexes[op]);
                         Exp_Node_New bracketsNode = new Exp_Node_New(content, opIndexes[op] + 1);
-                        Exp_Piece bracketsPiece = new Exp_Piece
+                        Exp_Piece bracketsPiece;
+                        if (opIndexes[op] - 1 >= 0 &&
+                            input[opIndexes[op] - 1].isString &&
+                            isVariable(input[opIndexes[op] - 1].inStrg))
                         {
-                            indexStart = opIndexes[op],
-                            indexEnd = i - 1,
-                            inNode = bracketsNode,
-                            inStrg = null,
-                            isString = false
-                        };
-                        input.Insert(opIndexes[op], bracketsPiece);
+                            //We have a function
+                            Exp_Node_New functionNode = new Exp_Node_New(
+                                null, bracketsNode,
+                                null,
+                                input[opIndexes[op] - 1].inStrg, Exp_Type.Function);
+                            input.RemoveRange(opIndexes[op] - 1, 1);
+                            bracketsPiece = new Exp_Piece
+                            {
+                                indexStart = opIndexes[op] - 1,
+                                indexEnd = i - 1,
+                                inNode = functionNode,
+                                inStrg = null,
+                                isString = false
+                            };
+                            input.Insert(opIndexes[op] - 1, bracketsPiece);
+                        }
+                        else
+                        {
+                            bracketsPiece = new Exp_Piece
+                            {
+                                indexStart = opIndexes[op],
+                                indexEnd = i - 1,
+                                inNode = bracketsNode,
+                                inStrg = null,
+                                isString = false
+                            };
+                            input.Insert(opIndexes[op], bracketsPiece);
+                        }
 
                         Exp_Node_New result = new Exp_Node_New(input, charInd);
                         this.input = result.input;
@@ -193,9 +249,9 @@ namespace SALO_Core.CodeBlocks.Expressions
                 }
                 else
                 {
-                    if(ops[op].isPrefix == true)
+                    if (ops[op].isPrefix == true)
                     {
-                        if(opIndexes[op] == input.Count - 1)
+                        if (opIndexes[op] == input.Count - 1)
                         {
                             //Prefix at the end - false match
                             continue;
@@ -271,7 +327,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     }
                     else if (ops[op].isPrefix == false)
                     {
-                        if(opIndexes[op] == 0)
+                        if (opIndexes[op] == 0)
                         {
                             //Suffix at the start - false match
                             continue;
@@ -346,7 +402,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     }
                     else
                     {
-                        if(opIndexes[op] == 0 || opIndexes[op] == input.Count - 1)
+                        if (opIndexes[op] == 0 || opIndexes[op] == input.Count - 1)
                         {
                             //We have a false match
                             continue;
@@ -358,16 +414,16 @@ namespace SALO_Core.CodeBlocks.Expressions
                         if (ops[op].toEnd)
                         {
                             List<Exp_Piece> contentLeft = new List<Exp_Piece>(opIndexes[op]);
-                            for(int j = 0; j < contentLeft.Capacity; ++j)
+                            for (int j = 0; j < contentLeft.Capacity; ++j)
                             {
                                 contentLeft.Add(input[j]);
                             }
                             Exp_Node_New leftNode = new Exp_Node_New(contentLeft, charInd);
                             input.RemoveRange(0, opIndexes[op] + 1);
 
-                            
+
                             List<Exp_Piece> contentRight = new List<Exp_Piece>(input.Count);
-                            for(int j = 0; j < contentRight.Capacity; ++j)
+                            for (int j = 0; j < contentRight.Capacity; ++j)
                             {
                                 contentRight.Add(input[j]);
                             }
@@ -442,8 +498,8 @@ namespace SALO_Core.CodeBlocks.Expressions
                     }
                 }
             }
-            if(!found) throw new AST_BadFormatException(
-                "No operator or operand found in input", charInd + input.Count - 1);
+            if (!found) throw new AST_BadFormatException(
+                 "No operator or operand found in input", charInd + input.Count - 1);
         }
         public Exp_Node_New(List<string> input, int charInd)
         {
@@ -502,13 +558,13 @@ namespace SALO_Core.CodeBlocks.Expressions
         private List<string> ToListString(List<Exp_Piece> list)
         {
             List<string> result = new List<string>();
-            foreach(var piece in list)
+            foreach (var piece in list)
             {
                 if (piece.isString)
                 {
                     result.Add(piece.inStrg);
                 }
-                else
+                else if (piece.inNode.input != null)
                 {
                     result.AddRange(piece.inNode.input);
                 }
