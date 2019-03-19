@@ -21,31 +21,15 @@ namespace SALO_Core.AST.Data
 					throw new AST_BadFormatException("Input parameter was given in a wrong format: " + input,
 								new FormatException("Parameter format is <type> <name>₴"), charIndex);
 			}
-			//TODO - allow custom types, created by user
-			switch (vars[0])
-			{
-				case "void":
-					dataType = DataType.Void;
-					data = "void";
-					break;
-                case "int32":
-					dataType = DataType.Int32;
-					break;
-                case "int16":
-                    dataType = DataType.Int16;
-                    break;
-                case "int8":
-					dataType = DataType.Int8;
-					break;
-				case "float32":
-					dataType = DataType.Float32;
-					break;
-				case "bool":
-					dataType = DataType.Bool;
-					break;
-				default:
-					throw new AST_BadFormatException("Format " + vars[0] + " is not supported", charIndex);
-			}
+            //TODO - allow custom types, created by user
+            try
+            {
+                dataType = CodeBlocks.ParameterType.GetParameterType(vars[0]);
+            }
+            catch (Exception e)
+            {
+                throw new AST_BadFormatException("Format " + vars[0] + " is not supported", e, charIndex);
+            }
 			if(vars.Length == 2)
 			{
 				if (!(char.IsLetter(vars[1][0]) || AST_Expression.naming_ast.Contains(vars[1][0])))

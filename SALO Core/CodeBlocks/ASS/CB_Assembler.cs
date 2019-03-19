@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,6 +17,11 @@ namespace SALO_Core.CodeBlocks
         public CB_Assembler(bool convertTo32)
         {
             this.convertTo32 = convertTo32;
+        }
+
+        public override string GetResult()
+        {
+            return Result;
         }
 
         public override void Parse(AST_Program input)
@@ -95,23 +101,24 @@ namespace SALO_Core.CodeBlocks
                 {
                     var p = input.parameters.ElementAt(i);
                     string address = "";
-                    switch (p.DataType)
+                    string dataType = p.DataType.GetName();
+                    switch (dataType)
                     {
-                        case DataType.Bool:
+                        case "bool":
                             addr += 1;
                             address = "byte ptr ebp+" + addr.ToString() + "";
                             break;
-                        case DataType.Float32:
+                        case "float32":
                             throw new NotImplementedException("Floats are not supported");
-                        case DataType.Int32:
+                        case "int32":
                             addr += 4;
                             address = "ptr ebp+" + addr.ToString() + "";
                             break;
-                        case DataType.Int8:
+                        case "int8":
                             addr += 1;
                             address = "byte ptr ebp+" + addr.ToString() + "";
                             break;
-                        case DataType.Int16:
+                        case "int16":
                             addr += 2;
                             address = "word ptr ebp+" + addr.ToString() + "";
                             break;
@@ -128,7 +135,7 @@ namespace SALO_Core.CodeBlocks
             Result += input.name + ":" + AST_Program.separator_line;
             //Working with input parameters, if void then skip
             if (input.parameters.Count > 0 &&
-                !(input.parameters.Count == 1 && input.parameters.First.Value.DataType == DataType.Void))
+                !(input.parameters.Count == 1 && input.parameters.First.Value.DataType.GetName() == "void"))
             {
                 Result += "\tpush \tebp" + AST_Program.separator_line;
                 Result += "\tmov  \tebp,\tesp" + AST_Program.separator_line;
@@ -174,7 +181,7 @@ namespace SALO_Core.CodeBlocks
                     //It is a prefix
                     if (node.exp_Data == "return")
                     {
-                        if (functionData.returnValue.DataType == DataType.Void)
+                        if (functionData.returnValue.DataType.GetName() == "void")
                             throw new AST_BadFormatException(
                                 "A void function " + functionData.name + " can\'t have return statements", -1);
                         if (node.right.exp_Type == Exp_Type.Constant)

@@ -15,7 +15,8 @@ namespace SALO_Core.Builders
 	public class Builder_Compile
 	{
 		private CB cb;
-		public Builder_Compile(Language lang, Builder_AST ast)
+        private string result = "";
+		public Builder_Compile(Language lang, Builder_AST ast, Builder_Libraries libs)
 		{
 			switch (lang)
 			{
@@ -26,17 +27,19 @@ namespace SALO_Core.Builders
 					}
 				case Language.Assembler:
 					{
-						cb = new CB_Assembler(false);
+						cb = new CB_Assembler_New(false, libs.libraries);
 						ast.Accept(cb);
 						break;
 					}
+                default: throw new NotImplementedException(lang + " is not supported");
 			}
+            result = cb?.GetResult();
 		}
 		public string Result
 		{
 			get
 			{
-				return cb?.Result;
+                return result;
 			}
 		}
 	}

@@ -50,6 +50,7 @@
     <Compile Include="AST\AST_Expression.cs" />
     <Compile Include="AST\AST_Function.cs" />
     <Compile Include="AST\AST_Include.cs" />
+    <Compile Include="AST\AST_Native.cs" />
     <Compile Include="AST\AST_Node.cs" />
     <Compile Include="AST\AST_Program.cs" />
     <Compile Include="AST\AST_Unknown.cs" />
@@ -59,9 +60,12 @@
     <Compile Include="Builders\Builder_AST.cs" />
     <Compile Include="Builders\Builder_Compile.cs" />
     <Compile Include="Builders\Builder_Global.cs" />
+    <Compile Include="Builders\Builder_Libraries.cs" />
     <Compile Include="Builders\Builder_Locales.cs" />
+    <Compile Include="Builders\Builder_Preprocessor.cs" />
     <Compile Include="Builders\Builder_Translation.cs" />
     <Compile Include="CodeBlocks\ASS\CB_Assembler.cs" />
+    <Compile Include="CodeBlocks\ASS\CB_Assembler_New.cs" />
     <Compile Include="CodeBlocks\CB.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp_Node.cs" />

@@ -11,7 +11,8 @@ namespace SALO_Core.CodeBlocks
 {
 	public abstract class CB
 	{
-		public string Result { get; protected set; }
+		protected string Result { get; set; }
+        public abstract string GetResult();
 		public abstract void Parse(AST_Program input);
 		public abstract void Parse(AST_Comment input);
 		public abstract void Parse(AST_Directive input);

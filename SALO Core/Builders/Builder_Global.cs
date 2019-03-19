@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,12 +14,30 @@ namespace SALO_Core.Builders
 	{
 		public Builder_Locales LocaleStrings { get; }
 		public Builder_Translation Translator { get; }
+        public Builder_Preprocessor Preprocessor { get; }
 		public Builder_AST AST { get; }
+        public Builder_Libraries Libraries { get; }
 		public Builder_Compile Compiler { get; }
 		public bool Initialized { get; }
-		public Builder_Global(string input, string settingsPath, Language lang,
+		public Builder_Global(string input, string inputPath, string settingsPath, Language lang,
 			bool build_eng = true, bool build_ast = true, bool build_lang = true)
 		{
+            try
+            {
+                if(input == null)
+                {
+                    if (inputPath == null)
+                        throw new NullReferenceException("Both provided input text and file are empty");
+                }
+                Encoding utf8 = Encoding.GetEncoding("UTF-8");
+                //TODO - check if file exists, if arguments are correct, etc.
+                input = File.ReadAllText(inputPath, utf8);
+            }
+            catch(Exception e)
+            {
+                throw new SALO_Exception("Unhandled exception caught while loading main code file", e);
+            }
+
 			try
 			{
 				LocaleStrings = Builder_Locales.FromFile(settingsPath);
@@ -37,7 +56,7 @@ namespace SALO_Core.Builders
 				{
 					Translator = new Builder_Translation(input, LocaleStrings);
 #if DEBUG
-                    Console.WriteLine();
+                    Console.WriteLine("Translated:");
 					Console.WriteLine(Translator.Translated);
 #endif
                 }
@@ -49,11 +68,29 @@ namespace SALO_Core.Builders
 				{
 					throw new SALO_Exception("Unhandled exception caught while creating Translation builder", e);
 				}
-				if (build_ast)
+
+                try
+                {
+                    Preprocessor = new Builder_Preprocessor(inputPath, Translator.Translated, LocaleStrings);
+#if DEBUG
+                    Console.WriteLine("Preprocessed:");
+                    Console.WriteLine(Preprocessor.OutputText);
+#endif
+                }
+                catch (SALO_Exception e)
+                {
+                    throw new SALO_Exception("Failed to create Preprocessor builder", e);
+                }
+                catch (Exception e)
+                {
+                    throw new SALO_Exception("Unhandled exception caught while creating Preprocessor builder", e);
+                }
+
+                if (build_ast)
 				{
 					try
 					{
-						AST = new Builder_AST(Translator.Translated);
+						AST = new Builder_AST(Preprocessor.OutputText);
 #if DEBUG
                         string ast = "";
                         AST.Print(ref ast);
@@ -74,7 +111,8 @@ namespace SALO_Core.Builders
 					{
 						try
 						{
-							Compiler = new Builder_Compile(lang, AST);
+                            Libraries = new Builder_Libraries(settingsPath);
+							Compiler = new Builder_Compile(lang, AST, Libraries);
 #if DEBUG
                             Console.WriteLine("ASM:");
                             Console.WriteLine(Compiler.Result);
@@ -86,14 +124,16 @@ namespace SALO_Core.Builders
 						}
 						catch (Exception e)
 						{
-							throw new SALO_Exception("Unhandled exception caught while compiling into " + lang.ToString(), e);
+							throw new SALO_Exception("Unhandled exception caught while compiling into " + 
+                                lang.ToString(), e);
 						}
 					}
 				}
 			}
 			Initialized = true;
 		}
-		public Builder_Global(string input, Language lang) : this(input, "Resources\\LocaleStrings.json", lang)
+		public Builder_Global(string input, string inputPath, Language lang) : 
+            this(input, inputPath, "Resources\\LocaleStrings.json", lang)
 		{
 
 		}

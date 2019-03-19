@@ -16,6 +16,7 @@ namespace SALO_Core.CodeBlocks.Expressions
         public List<string> input { get; protected set; }
         public string exp_Data { get; protected set; } = null;
         public Exp_Type exp_Type { get; protected set; } = Exp_Type.None;
+        public AST_Operator exp_Operator { get; protected set; }
         public Exp_Node()
         {
 

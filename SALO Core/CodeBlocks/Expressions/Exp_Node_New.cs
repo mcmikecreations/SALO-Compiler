@@ -50,10 +50,11 @@ namespace SALO_Core.CodeBlocks.Expressions
                         left = null;
                         right = null;
                     }
-                    else if (isEmptyOperation(input[0].inStrg))
+                    else if (isEmptyOperation(input[0].inStrg, out AST_Operator @operator))
                     {
                         exp_Type = Exp_Type.Operator;
                         exp_Data = input[0].inStrg;
+                        exp_Operator = @operator;
                         left = null;
                         right = null;
                     }
@@ -114,15 +115,16 @@ namespace SALO_Core.CodeBlocks.Expressions
                         opRightFilled = true;
                     }
                 }
-                if(input.Count - opIndexesRight[opRight] - 1 > opIndexesLeft[opLeft])
-                {
-                    op = opLeft;
-                    opIndexes[op] = opIndexesLeft[op];
-                }
-                else
+                if (!opRightFilled && !opLeftFilled) continue;
+                if(input.Count - opIndexesRight[opRight] - 1 < opIndexesLeft[opLeft] && (opRightFilled || !opLeftFilled))
                 {
                     op = opRight;
                     opIndexes[op] = opIndexesRight[op];
+                }
+                else
+                {
+                    op = opLeft;
+                    opIndexes[op] = opIndexesLeft[op];
                 }
                 if (opIndexes[op] == -1) continue;
 
@@ -186,6 +188,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                         if (i - 2 == opIndexes[op])
                         {
                             //Brackets are empty
+                            //TODO - call parameter-less functions with brackets
                             //TODO - initialize arrays with empty brackets
                             throw new AST_BadFormatException(
                                 "Empty brackets " + input[opIndexes[op]], charInd + i);
@@ -197,7 +200,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             content.Add(input[opIndexes[op] + 1 + j]);
                         }
                         input.RemoveRange(opIndexes[op], i - opIndexes[op]);
-                        Exp_Node_New bracketsNode = new Exp_Node_New(content, opIndexes[op] + 1);
+                        Exp_Node_New bracketsNode = new Exp_Node_New(content, opIndexes[op] + 1) { exp_Operator = ops[op] };
                         Exp_Piece bracketsPiece;
                         if (opIndexes[op] - 1 >= 0 &&
                             input[opIndexes[op] - 1].isString &&
@@ -236,6 +239,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                         this.input = result.input;
                         this.exp_Type = result.exp_Type;
                         this.exp_Data = result.exp_Data;
+                        this.exp_Operator = result.exp_Operator;
                         this.left = result.left;
                         this.right = result.right;
                         found = true;
@@ -273,7 +277,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New rightResult = new Exp_Node_New(
                                 null, rightNode,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator);
+                                ops[op].oper, Exp_Type.Operator){ exp_Operator = ops[op] };
                             Exp_Piece rightResultPiece = new Exp_Piece
                             {
                                 indexStart = opIndexes[op],
@@ -288,6 +292,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             this.input = result.input;
                             this.exp_Type = result.exp_Type;
                             this.exp_Data = result.exp_Data;
+                            this.exp_Operator = result.exp_Operator;
                             this.left = result.left;
                             this.right = result.right;
                             found = true;
@@ -304,7 +309,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New rightResult = new Exp_Node_New(
                                 null, rightNode,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator);
+                                ops[op].oper, Exp_Type.Operator){ exp_Operator = ops[op] };
                             Exp_Piece rightResultPiece = new Exp_Piece
                             {
                                 indexStart = opIndexes[op],
@@ -319,6 +324,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             this.input = result.input;
                             this.exp_Type = result.exp_Type;
                             this.exp_Data = result.exp_Data;
+                            this.exp_Operator = result.exp_Operator;
                             this.left = result.left;
                             this.right = result.right;
                             found = true;
@@ -349,7 +355,8 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New leftResult = new Exp_Node_New(
                                 leftNode, null,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator);
+                                ops[op].oper, Exp_Type.Operator)
+                                { exp_Operator = ops[op] };
                             Exp_Piece leftResultPiece = new Exp_Piece
                             {
                                 indexStart = 0,
@@ -364,6 +371,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             this.input = result.input;
                             this.exp_Type = result.exp_Type;
                             this.exp_Data = result.exp_Data;
+                            this.exp_Operator = result.exp_Operator;
                             this.left = result.left;
                             this.right = result.right;
                             found = true;
@@ -379,7 +387,8 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New leftResult = new Exp_Node_New(
                                 leftNode, null,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator);
+                                ops[op].oper, Exp_Type.Operator)
+                                { exp_Operator = ops[op] };
                             Exp_Piece leftResultPiece = new Exp_Piece
                             {
                                 indexStart = opIndexes[op] - 1,
@@ -394,6 +403,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             this.input = result.input;
                             this.exp_Type = result.exp_Type;
                             this.exp_Data = result.exp_Data;
+                            this.exp_Operator = result.exp_Operator;
                             this.left = result.left;
                             this.right = result.right;
                             found = true;
@@ -435,7 +445,8 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 leftNode, rightNode,
                                 new List<string>(ToListString(contentLeft)).
                                     Union(new List<string>(ToListString(contentRight))).ToList(),
-                                ops[op].oper, Exp_Type.Operator);
+                                ops[op].oper, Exp_Type.Operator)
+                                { exp_Operator = ops[op] };
                             Exp_Piece infixResultPiece = new Exp_Piece
                             {
                                 indexStart = 0,
@@ -451,6 +462,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             this.input = result.input;
                             this.exp_Type = result.exp_Type;
                             this.exp_Data = result.exp_Data;
+                            this.exp_Operator = result.exp_Operator;
                             this.left = result.left;
                             this.right = result.right;
                             found = true;
@@ -474,7 +486,8 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 leftNode, rightNode,
                                 new List<string>(ToListString(contentLeft)).
                                     Union(new List<string>(ToListString(contentRight))).ToList(),
-                                ops[op].oper, Exp_Type.Operator);
+                                ops[op].oper, Exp_Type.Operator)
+                                { exp_Operator = ops[op] };
                             Exp_Piece infixResultPiece = new Exp_Piece
                             {
                                 indexStart = opIndexes[op] - 1,
@@ -490,6 +503,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             this.input = result.input;
                             this.exp_Type = result.exp_Type;
                             this.exp_Data = result.exp_Data;
+                            this.exp_Operator = result.exp_Operator;
                             this.left = result.left;
                             this.right = result.right;
                             found = true;
@@ -520,10 +534,11 @@ namespace SALO_Core.CodeBlocks.Expressions
                     left = null;
                     right = null;
                 }
-                else if (isEmptyOperation(input[0]))
+                else if (isEmptyOperation(input[0], out AST_Operator @operator))
                 {
                     exp_Type = Exp_Type.Operator;
                     exp_Data = input[0];
+                    exp_Operator = @operator;
                     left = null;
                     right = null;
                 }
@@ -546,12 +561,17 @@ namespace SALO_Core.CodeBlocks.Expressions
             this.left = result.left;
             this.right = result.right;
         }
-        private bool isEmptyOperation(string input)
+        private bool isEmptyOperation(string input, out AST_Operator oper)
         {
             foreach (var op in AST_Expression.operators_ast)
             {
-                if (op.oper == input && op.operandCount == 0) return true;
+                if (op.oper == input && op.operandCount == 0)
+                {
+                    oper = op;
+                    return true;
+                }
             }
+            oper = new AST_Operator();
             return false;
         }
 

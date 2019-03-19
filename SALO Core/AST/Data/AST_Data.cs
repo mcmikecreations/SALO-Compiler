@@ -18,9 +18,9 @@ namespace SALO_Core.AST.Data
 	}
 	public abstract class AST_Data : AST_Node
 	{
-		protected DataType dataType;
+		protected CodeBlocks.IParameterType dataType;
 		protected string data;
-		public DataType DataType => dataType;
+		public CodeBlocks.IParameterType DataType => dataType;
 		public string Data => data;
 		public AST_Data(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
 		{

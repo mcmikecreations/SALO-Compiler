@@ -36,44 +36,52 @@ namespace SALO_Compiler
 			"\t\"-nb\" for not creating an output file (for debug purposes)\r\n";
 		static void Main(string[] args)
 		{
+            //SALO_Core.CodeBlocks.CB_Assembler_New.MemoryManager mm = 
+            //    new SALO_Core.CodeBlocks.CB_Assembler_New.MemoryManager(
+            //        new SALO_Core.CodeBlocks.CB_Assembler_New.Variable(
+            //            null, SALO_Core.AST.Data.DataType.Int32, 
+            //            new SALO_Core.CodeBlocks.CB_Assembler_New.Address("edx", -1)));
+
 			if(args == null || args.Length < 1)
 			{
 				Console.Write(help);
 				return;
 			}
 
-			Encoding utf8 = Encoding.GetEncoding("UTF-8");
-			//TODO - check if file exists, if arguments are correct, etc.
-			string utf8src = File.ReadAllText(args[0], utf8);
+            Encoding utf8 = Encoding.GetEncoding("UTF-8");
+            Console.OutputEncoding = utf8;
 
-			Console.OutputEncoding = utf8;
+#if DEBUG
+            //TODO - check if file exists, if arguments are correct, etc.
+            string utf8src = File.ReadAllText(args[0], utf8);
+            Console.WriteLine("Input:");
+            Console.WriteLine(utf8src);
+#endif
 
-			Console.WriteLine(utf8src);
-
-			//TODO - parse string
-			Builder_Global builder_Global = null;
+            //TODO - parse string
+            Builder_Global builder_Global = null;
 			try
 			{
-				builder_Global = new Builder_Global(utf8src, Language.Assembler);
+				builder_Global = new Builder_Global(null, args[0], Language.Assembler);
 
 				string fileName = Path.GetFileNameWithoutExtension(args[0]);
-				if ((args.Length > 1 && args[1] == "-eng") || 
-					(args.Length > 2 && args[2] == "-eng") || 
-					(args.Length > 3 && args[3] == "-eng"))
+				if ((args.Length > 1 && args[1] == "--eng") || 
+					(args.Length > 2 && args[2] == "--eng") || 
+					(args.Length > 3 && args[3] == "--eng"))
 				{
 					File.WriteAllText(fileName + "_translated.txt", builder_Global.Translator.Translated);
 				}
-				if ((args.Length > 1 && args[1] == "-ast") || 
-					(args.Length > 2 && args[2] == "-ast") || 
-					(args.Length > 3 && args[3] == "-ast"))
+				if ((args.Length > 1 && args[1] == "--ast") || 
+					(args.Length > 2 && args[2] == "--ast") || 
+					(args.Length > 3 && args[3] == "--ast"))
 				{
 					string ast = "";
 					builder_Global.AST.Print(ref ast);
 					File.WriteAllText(fileName + "_ast.txt", ast);
 				}
-				if((args.Length < 2 || args[1] != "-nb") && 
-					(args.Length < 3 || args[2] != "-nb") && 
-					(args.Length < 4 || args[3] != "-nb"))
+				if((args.Length < 2 || args[1] != "--nb") && 
+					(args.Length < 3 || args[2] != "--nb") && 
+					(args.Length < 4 || args[3] != "--nb"))
 				{
 					File.WriteAllText(fileName + ".asm", builder_Global.Compiler.Result);
 				}

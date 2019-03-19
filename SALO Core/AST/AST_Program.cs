@@ -98,8 +98,15 @@ namespace SALO_Core.AST
 					}
 					if (isForV)
 					{
-						//TODO - do checks for other function types
-						if (input.IndexOf("function", j) == j)
+                        if (input[j] != '\"')
+                            throw new AST_BadFormatException("Failed to parse function path",
+                                        new ArgumentException("Function path not found"), charIndex + j);
+                        int pathStart = j;
+                        ++j;
+                        while (input[j] != '\"' || input[j - 1] == '\\') ++j;
+                        j += 2;
+                        //TODO - do checks for other function types
+                        if (input.IndexOf("function", j) == j)
 						{
 							int k = j + "function".Length + 1;
 

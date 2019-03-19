@@ -15,7 +15,7 @@ namespace SALO_Core.Tools
 			string output = "";
 			while (i < word.Length)
 			{
-				switch (word[i])
+				switch (char.ToLower(word[i]))
 				{
 					case 'а':
 						{

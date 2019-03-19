@@ -26,6 +26,8 @@ namespace SALO_Core.AST
 		public bool isLeftToRight;
         public bool isPaired;
         public bool toEnd;
+
+        public bool init;
 		public AST_Operator(string oper, int operandCount, int layer, bool? isPrefix, bool isLeftToRight, bool isPaired, bool toEnd)
 		{
 			this.oper = oper;
@@ -35,6 +37,7 @@ namespace SALO_Core.AST
 			this.isLeftToRight = isLeftToRight;
             this.isPaired = isPaired;
             this.toEnd = toEnd;
+            this.init = true;
 		}
 	}
 	public class AST_Expression : AST_Node
