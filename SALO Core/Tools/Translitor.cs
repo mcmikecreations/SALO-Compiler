@@ -8,7 +8,25 @@ namespace SALO_Core.Tools
 {
 	public static class Translitor
 	{
-		public static string Translit(string word)
+        public static void AppendRange<T>(this LinkedList<T> source,
+                                      IEnumerable<T> items)
+        {
+            foreach (T item in items)
+            {
+                source.AddLast(item);
+            }
+        }
+
+        public static void PrependRange<T>(this LinkedList<T> source,
+                                           IEnumerable<T> items)
+        {
+            LinkedListNode<T> first = source.First;
+            foreach (T item in items)
+            {
+                source.AddBefore(first, item);
+            }
+        }
+        public static string Translit(string word)
 		{
 			if (string.IsNullOrWhiteSpace(word)) return word;
 			int i = 0;

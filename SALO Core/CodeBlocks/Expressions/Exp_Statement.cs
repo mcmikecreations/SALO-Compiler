@@ -9,11 +9,11 @@ using SALO_Core.Exceptions;
 
 namespace SALO_Core.CodeBlocks.Expressions
 {
-	public class Exp
+	public class Exp_Statement
 	{
 		protected List<string> items;
 		public Exp_Node head { get; protected set; }
-		public Exp(List<string> list)
+		public Exp_Statement(List<string> list)
 		{
             items = list;
             if (list == null)

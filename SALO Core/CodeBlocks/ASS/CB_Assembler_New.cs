@@ -14,6 +14,26 @@ namespace SALO_Core.CodeBlocks
 {
     public class CB_Assembler_New : CB
     {
+        public static string ToDataTypeLabel(IParameterType parameterType)
+        {
+            switch (parameterType.GetName())
+            {
+                case "void":
+                case "none":
+                    throw new ASS_Exception("Error converting parameter type to an assembler label",
+                        new ASS_Exception("Empty parameter types can\'t be converted to an assembler label", -1), -1);
+                case "int32":
+                    return "dd";
+                case "int16":
+                    return "dw";
+                case "int8":
+                    return "db";
+                default:
+                    throw new ASS_Exception("Error converting parameter type to an assembler label",
+                        new NotImplementedException(parameterType.GetName() +
+                            " can\'t be converted to an assembler label"), -1);
+            }
+        }
         protected abstract class Section<T>
         {
             protected string attributes;
@@ -71,7 +91,7 @@ namespace SALO_Core.CodeBlocks
                 return result;
             }
         }
-        protected class Data : Section<string>
+        protected class Data : Section<Variable>
         {
             public Data(string attributes) : base(attributes)
             {
@@ -81,6 +101,7 @@ namespace SALO_Core.CodeBlocks
             {
 
             }
+            public Variable Find(Predicate<Variable> predicate) => values.Find(predicate);
             public override string ConvertToString()
             {
                 string result = "";
@@ -88,96 +109,19 @@ namespace SALO_Core.CodeBlocks
                 {
                     result += "section \'.data\' " + attributes + AST_Program.separator_line;
                 }
-                foreach (string t in values)
+                foreach (var t in values)
                 {
-                    result += t + AST_Program.separator_line;
+                    if (t.address.length != -3)
+                        throw new ASS_Exception(t.address.address + 
+                            " is not considered a proper global variable", -1);
+                    result += t.address.address + " " +
+                        ToDataTypeLabel(t.dataType) + " " +
+                        t.ast_variable.Data + AST_Program.separator_line;
                 }
 
                 return result;
             }
         }
-        /*
-        protected class LibObject
-        {
-            public string name, path;
-            public FunctionType functionType = FunctionType.cdecl;
-            public DataType returnValue = DataType.Int32;
-            public AccessLevel accessLevel = AccessLevel.Shared;
-            public List<AST_Variable> parameters = new List<AST_Variable>();
-            public bool used = false;
-            public LibObject(string name, string path)
-            {
-                this.name = name;
-                //TODO - check if library exists
-                this.path = path;
-            }
-            public AST_Function ToASTFunction()
-            {
-                string code = "";
-                //TODO - decide on default access level
-                switch (accessLevel)
-                {
-                    case AccessLevel.Private:
-                        code += "private ";
-                        break;
-                    case AccessLevel.Shared:
-                        code += "shared ";
-                        break;
-                    default:
-                        code += "shared ";
-                        break;
-                }
-                code += "function " + name + AST_Program.separator_line;
-
-                code += "takes" + AST_Program.separator_line;
-                if (parameters.Count == 0)
-                {
-                    code += "void ₴" + AST_Program.separator_line;
-                }
-                foreach (var inp in parameters)
-                {
-                    code += inp.DataType.ToString().ToLower() + " " + inp.Data + " ₴" + AST_Program.separator_line;
-                }
-                code += "ends" + AST_Program.separator_line;
-
-                code += "gives" + AST_Program.separator_line;
-                code += returnValue.ToString().ToLower() + " ₴" + AST_Program.separator_line;
-                code += "ends" + AST_Program.separator_line;
-
-                code += "does" + AST_Program.separator_line;
-                code += "ends" + AST_Program.separator_line;
-
-                code += "ends " + name + AST_Program.separator_line;
-
-                return new AST_Function(null, code, 0);
-            }
-        }
-        protected class Library : LibObject
-        {
-            public List<LibObject> functions;
-            public bool used = false;
-            public Library(string name, string path) : base(name, path)
-            {
-                functions = new List<LibObject>();
-            }
-            public void AddFunction(LibObject function)
-            {
-                functions.Add(function);
-            }
-            public void RemoveFunction(LibObject function)
-            {
-                functions.Remove(function);
-            }
-            public bool Includes(string functionName)
-            {
-                foreach (var l in functions)
-                {
-                    if (l.name == functionName) return true;
-                }
-                return false;
-            }
-        }
-        */
         protected class IData : Section<Library>
         {
             public IData(string attributes) : base(attributes)
@@ -308,15 +252,15 @@ namespace SALO_Core.CodeBlocks
             {
                 sec4.AddValue(f.ConvertToString());
             }
-            foreach(var l in defaultLibs)
+            foreach (var l in defaultLibs)
             {
                 if (l.used) sec5.AddValue(l);
             }
-            Result = 
-                sec1.ConvertToString() + 
-                sec2.ConvertToString() + 
-                sec4.ConvertToString() + 
-                sec3.ConvertToString() + 
+            Result =
+                sec1.ConvertToString() +
+                sec2.ConvertToString() +
+                sec4.ConvertToString() +
+                sec3.ConvertToString() +
                 sec5.ConvertToString();
             return Result;
         }
@@ -366,7 +310,7 @@ namespace SALO_Core.CodeBlocks
             public string address;
             public int offset;
             /// <summary>
-            /// -1 for register, -2 for constant, -3 for define
+            /// -1 for register, -2 for constant, -3 for variable labels
             /// </summary>
             public int length;
             public Address(string baseAddress)
@@ -401,6 +345,8 @@ namespace SALO_Core.CodeBlocks
             {
                 switch (length)
                 {
+                    case -3:
+                        return address;
                     case -2:
                         return address;
                     case -1:
@@ -459,6 +405,7 @@ namespace SALO_Core.CodeBlocks
             {
                 this.stackStart = newStackTop;
                 this.stack = new Stack<Variable>();
+                //stack.Push(newStackTop);
                 axTaken = false;
                 bxTaken = false;
                 cxTaken = false;
@@ -597,6 +544,10 @@ namespace SALO_Core.CodeBlocks
                 }
                 else
                 {
+                    //Check for function parameters
+                    if (stack.Count == 0 &&
+                        oldVariable.address.address == "ebp" &&
+                        oldVariable.address.offset > 0) return;
                     if (stack.Peek() != oldVariable)
                     {
                         throw new ASS_Exception("Memory manager stack corrupt", -1);
@@ -638,7 +589,7 @@ namespace SALO_Core.CodeBlocks
                     this.parameters.Add(new Variable(p, p.DataType, new Address("ebp", p.DataType, addr)));
                 }
                 if ((ast_function.parameters != null && ast_function.parameters.Count > 0 &&
-                !(ast_function.parameters.Count == 1 && 
+                !(ast_function.parameters.Count == 1 &&
                   ast_function.parameters.First.Value.DataType.GetName() == "void"))
                 || (ast_function.locals != null && ast_function.locals.Count > 0))
                 {
@@ -702,7 +653,7 @@ namespace SALO_Core.CodeBlocks
                 foreach (AST_Expression input in ast_function.expressions)
                 {
                     string resString;
-                    if(input is AST_Native)
+                    if (input is AST_Native)
                     {
                         ParseNative((AST_Native)input, out resString);
                     }
@@ -726,7 +677,7 @@ namespace SALO_Core.CodeBlocks
             private Variable ParseExpression(AST_Expression input, out string resString)
             {
                 //TODO - move this to AST_Expression
-                Exp exp = new Exp(input.nodes);
+                Exp_Statement exp = new Exp_Statement(input.nodes);
 #if DEBUG
                 string output = "";
                 exp.Print("", false, ref output);
@@ -851,6 +802,27 @@ namespace SALO_Core.CodeBlocks
                 {
                     res = new Variable(null, GetDataType(input), new Address(input.exp_Data, -2));
                 }
+                else if (input.exp_Type == Exp_Type.Variable)
+                {
+                    Variable foundVar = locals.Find(a => a.ast_variable != null &&
+                        a.ast_variable.Data == input.exp_Data);
+                    if (foundVar == null)
+                    {
+                        //Search function parameters
+                        foundVar = parameters.Find(a => a.ast_variable != null && 
+                            a.ast_variable.Data == input.exp_Data);
+                        if (foundVar == null)
+                        {
+                            //Search global variables
+                            foundVar = parent.sec3.Find(a => a.ast_variable != null &&
+                                a.address.address == input.exp_Data);
+                            if (foundVar == null)
+                                throw new ASS_Exception("Failed to parse variable usage",
+                                    new ASS_Exception("Variable " + input.exp_Data + " was not found", -1), -1);
+                        }
+                    }
+                    res = foundVar;
+                }
                 else if (input.exp_Type == Exp_Type.Function)
                 {
                     //TODO - check parameter types
@@ -883,8 +855,11 @@ namespace SALO_Core.CodeBlocks
                                 a.ast_function.path != ast_function.path)
                                 return false;
                             if (a.name != input.exp_Data) return false;
+                            if (fParameters.Count == 0 &&
+                                a.parameters.Count == 1 && a.parameters[0].dataType.GetName() == "void")
+                                return true;
                             if (a.parameters.Count != fParameters.Count) return false;
-                            for(int loop = 0; loop < a.parameters.Count; ++loop)
+                            for (int loop = 0; loop < a.parameters.Count; ++loop)
                             {
                                 if (!a.parameters[loop].dataType.Equals(fParameters.ElementAt(loop).dataType))
                                     return false;
@@ -896,8 +871,19 @@ namespace SALO_Core.CodeBlocks
                             fUsed = fLocal.ast_function;
                             location = 2;
                         }
-                        else throw new ASS_Exception(
-                            "Function " + input.exp_Data + " was not found. Perhaps, it was private?", -1);
+                        else
+                        {
+                            string paramList = "";
+                            foreach(var par in fParameters)
+                            {
+                                paramList += par.dataType.GetName() + ", ";
+                            }
+                            if (fParameters.Count > 0)
+                                paramList = paramList.Remove(paramList.Length - 2);
+                            throw new ASS_Exception(
+                                "Function " + input.exp_Data + "(" + paramList + 
+                                ") was not found. Perhaps, it was private?", -1);
+                        }
                     }
                     if (fUsed != null)
                     {
@@ -920,7 +906,7 @@ namespace SALO_Core.CodeBlocks
                                 memoryManager.SetFreeAddress(el.Value);
                                 el = el.Previous;
                             }
-                            if(location == 1)
+                            if (location == 1)
                             {
                                 result += "\t call\t [" + input.exp_Data + "]" + AST_Program.separator_line;
                             }
@@ -938,14 +924,14 @@ namespace SALO_Core.CodeBlocks
                             if (popEAX)
                             {
                                 res = memoryManager.GetFreeAddress(null, fUsed.retValue.DataType);
-                                result += "\t  mov\t" + res.address.ConvertToString() + ",\teax" + 
+                                result += "\t  mov\t" + res.address.ConvertToString() + ",\teax" +
                                     AST_Program.separator_line;
                                 result += "\t  pop\teax" + AST_Program.separator_line;
                             }
                             else
                             {
                                 //TODO - calculate return type
-                                res = new Variable(null, ParameterType.GetParameterType("int32"), 
+                                res = new Variable(null, ParameterType.GetParameterType("int32"),
                                     new Address("eax", -1));
                             }
                         }
@@ -988,8 +974,8 @@ namespace SALO_Core.CodeBlocks
                             {
                                 //TODO - calculate return type
                                 res = new Variable(
-                                    null, 
-                                    ParameterType.GetParameterType("int32"), 
+                                    null,
+                                    ParameterType.GetParameterType("int32"),
                                     new Address("eax", -1));
                             }
                         }
@@ -1018,8 +1004,8 @@ namespace SALO_Core.CodeBlocks
                     return res;
                 }
                 string resString = "";
-                res.Concat(ToParameterList(exp, head.left, out resString));
-                res.Concat(ToParameterList(exp, head.right, out resString));
+                SALO_Core.Tools.Translitor.AppendRange(res, ToParameterList(exp, head.left, out resString));
+                SALO_Core.Tools.Translitor.AppendRange(res, ToParameterList(exp, head.right, out resString));
                 result = resString;
                 return res;
             }
@@ -1071,7 +1057,7 @@ namespace SALO_Core.CodeBlocks
             throw new NotImplementedException();
         }
 
-        public override void Parse(Exp exp)
+        public override void Parse(Exp_Statement exp)
         {
             throw new NotImplementedException();
         }

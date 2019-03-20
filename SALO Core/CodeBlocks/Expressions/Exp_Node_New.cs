@@ -18,8 +18,8 @@ namespace SALO_Core.CodeBlocks.Expressions
             public int indexStart, indexEnd;
             public bool isString;
         }
-        public Exp_Node_New(Exp_Node_New left, Exp_Node_New right, 
-                            List<string> input, 
+        public Exp_Node_New(Exp_Node_New left, Exp_Node_New right,
+                            List<string> input,
                             string exp_Data, Exp_Type exp_Type)
         {
             this.left = left;
@@ -93,21 +93,21 @@ namespace SALO_Core.CodeBlocks.Expressions
                 {
                     string operation = "";
                     string[] opPieces = ops[opInd].oper.Split(
-                        new char[] { ' ' }, 
+                        new char[] { ' ' },
                         StringSplitOptions.RemoveEmptyEntries);
                     operation = opPieces[0];
                     //TODO - DONE - find RightToLeft operators separately and compare their distance to the last element
                     opIndexesLeft[opInd] = input.FindIndex(a => a.isString && a.inStrg == operation);
                     opIndexesRight[opInd] = input.FindLastIndex(a => a.isString && a.inStrg == operation);
-                    if ((opIndexesLeft[opLeft] == -1 || 
-                        opIndexesLeft[opInd] < opIndexesLeft[opLeft] || !opLeftFilled) && 
+                    if ((opIndexesLeft[opLeft] == -1 ||
+                        opIndexesLeft[opInd] < opIndexesLeft[opLeft] || !opLeftFilled) &&
                         opIndexesLeft[opInd] != -1 && ops[opInd].isLeftToRight)
                     {
                         //Operator exists and is closer to the start of input
                         opLeft = opInd;
                         opLeftFilled = true;
                     }
-                    if((opIndexesRight[opRight] == -1 || 
+                    if ((opIndexesRight[opRight] == -1 ||
                         opIndexesRight[opInd] > opIndexesRight[opRight] || !opRightFilled) &&
                         opIndexesRight[opInd] != -1 && !ops[opInd].isLeftToRight)
                     {
@@ -116,7 +116,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     }
                 }
                 if (!opRightFilled && !opLeftFilled) continue;
-                if(input.Count - opIndexesRight[opRight] - 1 < opIndexesLeft[opLeft] && (opRightFilled || !opLeftFilled))
+                if (input.Count - opIndexesRight[opRight] - 1 < opIndexesLeft[opLeft] && (opRightFilled || !opLeftFilled))
                 {
                     op = opRight;
                     opIndexes[op] = opIndexesRight[op];
@@ -189,50 +189,75 @@ namespace SALO_Core.CodeBlocks.Expressions
                         {
                             //Brackets are empty
                             //TODO - call parameter-less functions with brackets
-                            //TODO - initialize arrays with empty brackets
-                            throw new AST_BadFormatException(
-                                "Empty brackets " + input[opIndexes[op]], charInd + i);
-                        }
-                        //Create the content array
-                        List<Exp_Piece> content = new List<Exp_Piece>(i - 2 - opIndexes[op]);
-                        for (int j = 0; j < content.Capacity; ++j)
-                        {
-                            content.Add(input[opIndexes[op] + 1 + j]);
-                        }
-                        input.RemoveRange(opIndexes[op], i - opIndexes[op]);
-                        Exp_Node_New bracketsNode = new Exp_Node_New(content, opIndexes[op] + 1) { exp_Operator = ops[op] };
-                        Exp_Piece bracketsPiece;
-                        if (opIndexes[op] - 1 >= 0 &&
-                            input[opIndexes[op] - 1].isString &&
-                            isVariable(input[opIndexes[op] - 1].inStrg))
-                        {
-                            //We have a function
-                            Exp_Node_New functionNode = new Exp_Node_New(
-                                null, bracketsNode,
-                                null,
-                                input[opIndexes[op] - 1].inStrg, Exp_Type.Function);
-                            input.RemoveRange(opIndexes[op] - 1, 1);
-                            bracketsPiece = new Exp_Piece
+                            if (i - 3 >= 0 && input[i - 3].isString && isVariable(input[i - 3].inStrg))
                             {
-                                indexStart = opIndexes[op] - 1,
-                                indexEnd = i - 1,
-                                inNode = functionNode,
-                                inStrg = null,
-                                isString = false
-                            };
-                            input.Insert(opIndexes[op] - 1, bracketsPiece);
+                                //We have a parameter-less function
+                                input.RemoveRange(opIndexes[op], 2);
+                                Exp_Node_New functionNode = new Exp_Node_New(
+                                    null, null, null,
+                                    input[opIndexes[op] - 1].inStrg, Exp_Type.Function);
+                                input.RemoveRange(opIndexes[op] - 1, 1);
+                                Exp_Piece bracketsPiece = new Exp_Piece
+                                {
+                                    indexStart = opIndexes[op] - 1,
+                                    indexEnd = i - 1,
+                                    inNode = functionNode,
+                                    inStrg = null,
+                                    isString = false
+                                };
+                                input.Insert(opIndexes[op] - 1, bracketsPiece);
+                            }
+                            else
+                            {
+                                //TODO - initialize arrays with empty brackets
+                                throw new AST_BadFormatException(
+                                    "Empty brackets " + input[opIndexes[op]], charInd + i);
+                            }
                         }
                         else
                         {
-                            bracketsPiece = new Exp_Piece
+                            //Create the content array
+                            List<Exp_Piece> content = new List<Exp_Piece>(i - 2 - opIndexes[op]);
+                            for (int j = 0; j < content.Capacity; ++j)
                             {
-                                indexStart = opIndexes[op],
-                                indexEnd = i - 1,
-                                inNode = bracketsNode,
-                                inStrg = null,
-                                isString = false
-                            };
-                            input.Insert(opIndexes[op], bracketsPiece);
+                                content.Add(input[opIndexes[op] + 1 + j]);
+                            }
+                            input.RemoveRange(opIndexes[op], i - opIndexes[op]);
+                            Exp_Node_New bracketsNode = new Exp_Node_New(content, opIndexes[op] + 1)
+                            { exp_Operator = ops[op] };
+                            Exp_Piece bracketsPiece;
+                            if (opIndexes[op] - 1 >= 0 &&
+                                input[opIndexes[op] - 1].isString &&
+                                isVariable(input[opIndexes[op] - 1].inStrg))
+                            {
+                                //We have a function
+                                Exp_Node_New functionNode = new Exp_Node_New(
+                                    null, bracketsNode,
+                                    null,
+                                    input[opIndexes[op] - 1].inStrg, Exp_Type.Function);
+                                input.RemoveRange(opIndexes[op] - 1, 1);
+                                bracketsPiece = new Exp_Piece
+                                {
+                                    indexStart = opIndexes[op] - 1,
+                                    indexEnd = i - 1,
+                                    inNode = functionNode,
+                                    inStrg = null,
+                                    isString = false
+                                };
+                                input.Insert(opIndexes[op] - 1, bracketsPiece);
+                            }
+                            else
+                            {
+                                bracketsPiece = new Exp_Piece
+                                {
+                                    indexStart = opIndexes[op],
+                                    indexEnd = i - 1,
+                                    inNode = bracketsNode,
+                                    inStrg = null,
+                                    isString = false
+                                };
+                                input.Insert(opIndexes[op], bracketsPiece);
+                            }
                         }
 
                         Exp_Node_New result = new Exp_Node_New(input, charInd);
@@ -277,7 +302,8 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New rightResult = new Exp_Node_New(
                                 null, rightNode,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator){ exp_Operator = ops[op] };
+                                ops[op].oper, Exp_Type.Operator)
+                            { exp_Operator = ops[op] };
                             Exp_Piece rightResultPiece = new Exp_Piece
                             {
                                 indexStart = opIndexes[op],
@@ -309,7 +335,8 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New rightResult = new Exp_Node_New(
                                 null, rightNode,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator){ exp_Operator = ops[op] };
+                                ops[op].oper, Exp_Type.Operator)
+                            { exp_Operator = ops[op] };
                             Exp_Piece rightResultPiece = new Exp_Piece
                             {
                                 indexStart = opIndexes[op],
@@ -356,7 +383,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 leftNode, null,
                                 new List<string>(ToListString(content)),
                                 ops[op].oper, Exp_Type.Operator)
-                                { exp_Operator = ops[op] };
+                            { exp_Operator = ops[op] };
                             Exp_Piece leftResultPiece = new Exp_Piece
                             {
                                 indexStart = 0,
@@ -388,7 +415,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 leftNode, null,
                                 new List<string>(ToListString(content)),
                                 ops[op].oper, Exp_Type.Operator)
-                                { exp_Operator = ops[op] };
+                            { exp_Operator = ops[op] };
                             Exp_Piece leftResultPiece = new Exp_Piece
                             {
                                 indexStart = opIndexes[op] - 1,
@@ -446,7 +473,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 new List<string>(ToListString(contentLeft)).
                                     Union(new List<string>(ToListString(contentRight))).ToList(),
                                 ops[op].oper, Exp_Type.Operator)
-                                { exp_Operator = ops[op] };
+                            { exp_Operator = ops[op] };
                             Exp_Piece infixResultPiece = new Exp_Piece
                             {
                                 indexStart = 0,
@@ -487,7 +514,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 new List<string>(ToListString(contentLeft)).
                                     Union(new List<string>(ToListString(contentRight))).ToList(),
                                 ops[op].oper, Exp_Type.Operator)
-                                { exp_Operator = ops[op] };
+                            { exp_Operator = ops[op] };
                             Exp_Piece infixResultPiece = new Exp_Piece
                             {
                                 indexStart = opIndexes[op] - 1,

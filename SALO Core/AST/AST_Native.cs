@@ -35,7 +35,13 @@ namespace SALO_Core.AST
                 output += "|-";
                 indent += "| ";
             }
-            output += "Native:\r\n" + code + "\r\n";
+            output += "Native:\r\n";
+            string[] lines = code.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach(string s in lines)
+            {
+                output += indent + s + "\r\n";
+            }
+
             if (childNodes != null)
             {
                 for (LinkedListNode<AST_Node> ch = childNodes.First; ch != null; ch = ch.Next)

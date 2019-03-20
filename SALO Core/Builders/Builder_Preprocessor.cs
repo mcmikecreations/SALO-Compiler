@@ -43,12 +43,13 @@ namespace SALO_Core.Builders
                     new FileNotFoundException(mainFilePath));
             //Get input text
             InputText = input;
-            //Include files
-            string outText = IncludeCode(InputText, mainFilePath);
+            string outText = input;
             //Remove comments
             outText = RemoveComments(outText);
             //Replace backslashed
             outText = ReplaceBackslash(outText);
+            //Include files
+            outText = IncludeCode(outText, mainFilePath);
             //Perform macros
             bool processed = true;
             while (processed) outText = ProcessFile(outText, out processed);
@@ -112,7 +113,10 @@ namespace SALO_Core.Builders
                 }
                 string fileData = File.ReadAllText(fileName, utf8);
                 Builder_Translation builder_Translation = new Builder_Translation(fileData, locales);
-                fileData = IncludeCode(builder_Translation.Translated, fileName);
+                fileData = builder_Translation.Translated;
+                fileData = RemoveComments(fileData);
+                fileData = ReplaceBackslash(fileData);
+                fileData = IncludeCode(fileData, fileName);
 
                 input = input.Remove(pos, includeEnd - pos + 1);
                 input = input.Insert(pos, fileData);

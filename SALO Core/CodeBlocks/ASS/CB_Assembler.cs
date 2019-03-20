@@ -158,7 +158,7 @@ namespace SALO_Core.CodeBlocks
 
         public override void Parse(AST_Expression input)
         {
-            Exp exp = new Exp(input.nodes);
+            Exp_Statement exp = new Exp_Statement(input.nodes);
 #if DEBUG
             string output = "";
             exp.Print("", false, ref output);
@@ -167,7 +167,7 @@ namespace SALO_Core.CodeBlocks
             //exp.Accept(this);
         }
 
-        public override void Parse(Exp exp)
+        public override void Parse(Exp_Statement exp)
         {
             exp.head.Accept(this);
         }
