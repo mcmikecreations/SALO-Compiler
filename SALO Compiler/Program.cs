@@ -34,7 +34,7 @@ namespace SALO_Compiler
 			"\t\"-eng\" for writing translated input file into a separate .txt file\r\n" +
 			"\t\"-ast\" for writing abstract syntax tree into a separate .txt file\r\n" +
 			"\t\"-nb\" for not creating an output file (for debug purposes)\r\n";
-		static void Main(string[] args)
+		static int Main(string[] args)
 		{
             //SALO_Core.CodeBlocks.CB_Assembler_New.MemoryManager mm = 
             //    new SALO_Core.CodeBlocks.CB_Assembler_New.MemoryManager(
@@ -45,7 +45,7 @@ namespace SALO_Compiler
 			if(args == null || args.Length < 1)
 			{
 				Console.Write(help);
-				return;
+				return 1;
 			}
 
             Encoding utf8 = Encoding.GetEncoding("UTF-8");
@@ -89,14 +89,17 @@ namespace SALO_Compiler
 			catch (SALO_Exception e)
 			{
 				ExceptionHandler.ShowException(e);
+                return 2;
 			}
 			catch (Exception e)
 			{
 				Console.Error.WriteLine("Unhandled exception: " + e.Message);
+                return 3;
 			}
 #if DEBUG
 			Console.ReadLine();
 #endif
+            return 0;
 		}
 	}
 }

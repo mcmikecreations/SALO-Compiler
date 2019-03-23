@@ -48,8 +48,9 @@ namespace SALO_Core.AST
             new AST_Operator("return", 1, 0, true, true, false, true),
             new AST_Operator("return", 0, 0, null, true, false, false),
             //new AST_Operator("=", 2, 0, null, true, false, false),
-			new AST_Operator("( )", 1, 1, null, true, true, false),
-			new AST_Operator("[ ]", 1, 1, null, true, true, false),
+			new AST_Operator("( )", 1, 2, null, true, true, false),
+			new AST_Operator("[ ]", 1, 2, null, true, true, false),
+			new AST_Operator("&", 1, 3, true, false, false, false),
             new AST_Operator("*", 2, 5, null, true, false, false),
             new AST_Operator("/", 2, 5, null, true, false, false),
             new AST_Operator("-", 2, 6, null, true, false, false),
@@ -103,10 +104,29 @@ namespace SALO_Core.AST
 						items.AddLast("\"");
 						break;
 					}
-					//We have a string literal
-					int endInd = input.IndexOf('\"', i + 1);
-					if (endInd == -1) endInd = input.Length - 1;
-					string val = input.Substring(i, endInd - i + 1);
+                    //We have a string literal
+                    int endInd = i + 1;
+                    while(input[endInd] != '\"' || input[endInd - 1] == '\\')
+                    {
+                        //We search for a non-escaped quotation mark
+                        ++endInd;
+                        if(endInd >= input.Length)
+                        {
+                            endInd = -1;
+                            break;
+                        }
+                    }
+                    //input.IndexOf('\"', i + 1);
+                    string val = "";
+                    if (endInd == -1)
+                    {
+                        endInd = input.Length - 1;
+                        val = input.Substring(i, endInd - i + 1) + "\"";
+                    }
+                    else
+                    {
+                        val = input.Substring(i, endInd - i + 1);
+                    }
 					items.AddLast(val);
 					i += val.Length;
 				}

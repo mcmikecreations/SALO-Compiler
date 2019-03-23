@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Converters;
 using SALO_Core.AST;
 using SALO_Core.Exceptions;
+using SALO_Core.Exceptions.ASS;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,6 +16,23 @@ namespace SALO_Core.CodeBlocks
     {
         int GetLengthInBytes();
         string GetName();
+    }
+    public class PT_Lpcstr : IParameterType
+    {
+        public bool Equals(IParameterType other)
+        {
+            return (GetLengthInBytes() == other.GetLengthInBytes() &&
+                    GetName() == other.GetName());
+        }
+        public int GetLengthInBytes()
+        {
+            //It is a pointer to a byte
+            return 1;
+        }
+        public string GetName()
+        {
+            return "lpcstr";
+        }
     }
     public class PT_Int32 : IParameterType
     {
@@ -71,6 +89,8 @@ namespace SALO_Core.CodeBlocks
             input = input.ToLower();
             switch (input)
             {
+                case "lpcstr":
+                    return new PT_Lpcstr();
                 case "int32":
                     return new PT_Int32();
                 case "void":
@@ -125,9 +145,10 @@ namespace SALO_Core.CodeBlocks
             }
             else
             {
-                code += "\"" + path + "\" ";
+                throw new ASS_Exception("Function " + name + " does not have a parent library", -1);
+                //code += "\"" + path + "\" ";
             }
-            code += "function " + name + AST_Program.separator_line;
+            code += "function " + path + AST_Program.separator_line;
 
             code += "takes" + AST_Program.separator_line;
             if (parameters.Count == 0)

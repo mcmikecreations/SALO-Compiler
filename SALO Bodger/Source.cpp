@@ -218,7 +218,7 @@ invoke  ExitProcess, 0\r\n\
 		return EXIT_FAILURE;
 	}*/
 
-	compile(params);
+	int retValue = compile(params);
 	delete[] params;
-	return 0;
+	return retValue;
 }

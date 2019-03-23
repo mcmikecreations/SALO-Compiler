@@ -13,7 +13,8 @@ namespace SALO_Core.AST.Data
 		public override void Parse(string input, int charIndex)
 		{
 			if (string.IsNullOrWhiteSpace(input))
-				throw new AST_EmptyInputException("Provided string is empty", charIndex);
+				throw new AST_EmptyInputException("Provided variable string is empty", charIndex);
+            //TODO - take spaces into account while parsing
 			string[] vars = input.Split(AST_Program.separator_ast.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 			if (vars.Length != 2)
 			{
@@ -32,7 +33,8 @@ namespace SALO_Core.AST.Data
             }
 			if(vars.Length == 2)
 			{
-				if (!(char.IsLetter(vars[1][0]) || AST_Expression.naming_ast.Contains(vars[1][0])))
+				if (!(char.IsLetter(vars[1][0]) || AST_Expression.naming_ast.Contains(vars[1][0])/* ||
+                    vars[1][0] == '\"'*/))
 					throw new AST_BadFormatException("Variable name not allowed",
 								new FormatException("Variable name should start with a letter or " + AST_Expression.naming_ast),
 								charIndex + vars[0].Length + 1);
@@ -65,5 +67,12 @@ namespace SALO_Core.AST.Data
 		{
 
 		}
+        //Use only when creating global variables in low-level languages
+        public AST_Variable(AST_Node parent, string type, string data) : base(parent, "int32 a", -1)
+        {
+            this.parent = parent;
+            this.dataType = CodeBlocks.ParameterType.GetParameterType(type);
+            this.data = data;
+        }
 	}
 }

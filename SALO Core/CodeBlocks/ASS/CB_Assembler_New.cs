@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SALO_Core.AST;
 using SALO_Core.AST.Data;
+using SALO_Core.AST.Logic;
 using SALO_Core.CodeBlocks.Expressions;
 using SALO_Core.Exceptions;
 using SALO_Core.Exceptions.ASS;
@@ -26,6 +27,7 @@ namespace SALO_Core.CodeBlocks
                     return "dd";
                 case "int16":
                     return "dw";
+                case "lpcstr":
                 case "int8":
                     return "db";
                 default:
@@ -101,6 +103,122 @@ namespace SALO_Core.CodeBlocks
             {
 
             }
+            private bool IsSpecialSymbol(char symbol)
+            {
+                //TODO - rewrite this code to actually work
+                if (symbol == '\\' || symbol == '\r' || symbol == '\n' ||
+                    symbol == '\'' || symbol == '\"' || symbol == '\t')
+                {
+                    return true;
+                }
+                return false;
+            }
+            private bool IsSpecialSymbol(char symbol, char prev)
+            {
+                if (prev != '\\') return false;
+                if (symbol == '\\' || symbol == 'r' || symbol == 'n' ||
+                    symbol == '\'' || symbol == '\"' || symbol == 't')
+                {
+                    return true;
+                }
+                return false;
+            }
+            private byte ToSpecialSymbol(char symbol, char prev)
+            {
+                if (prev != '\\')
+                    throw new ASS_Exception(prev + " is not an escape character", -1);
+                char retVal = ' ';
+                switch (symbol)
+                {
+                    case '\\':
+                        retVal = '\\';
+                        break;
+                    case 'r':
+                        retVal = '\r';
+                        break;
+                    case 'n':
+                        retVal = '\n';
+                        break;
+                    case 't':
+                        retVal = '\t';
+                        break;
+                    case '\'':
+                        retVal = '\'';
+                        break;
+                    case '\"':
+                        retVal = '\"';
+                        break;
+                    default:
+                        throw new ASS_Exception(symbol + " is not recognised as a special symbol", -1);
+                }
+                byte[] b = Encoding.UTF8.GetBytes(new char[] { retVal });
+                return b[0];
+            }
+            public Variable DeclareString(string input)
+            {
+                if (input[0] != '\"' || input[input.Length - 1] != '\"')
+                    throw new ASS_Exception("Can\'t use a broken string literal", -1);
+                input = input.Substring(1, input.Length - 2);
+                string parsedInput = "";
+                byte[] byteData = Encoding.UTF8.GetBytes(input.ToCharArray());
+                //TODO - make better conversion
+                for (int i = 0; i < byteData.Length; ++i)
+                {
+                    if (i < input.Length - 1 && IsSpecialSymbol(input[i + 1], input[i]))
+                    {
+                        //We have a special character
+                        if (parsedInput.Length > 0 && parsedInput[parsedInput.Length - 1] == ',')
+                        {
+                            parsedInput += ToSpecialSymbol(input[i + 1], input[i]).ToString() + ",";
+                        }
+                        else if (parsedInput.Length == 0)
+                        {
+                            parsedInput += ToSpecialSymbol(input[i + 1], input[i]).ToString() + ",";
+                        }
+                        else
+                        {
+                            //We have a letter
+                            parsedInput += "\"," + ToSpecialSymbol(input[i + 1], input[i]).ToString() + ",";
+                        }
+                        ++i;
+                    }
+                    else if (IsSpecialSymbol(input[i]))
+                    {
+                        if (i == 0 || (i > 0 && IsSpecialSymbol(input[i - 1])) || 
+                            (i > 1 && IsSpecialSymbol(input[i - 1], input[i - 2])))
+                        {
+                            parsedInput += byteData[i] + ",";
+                        }
+                        else
+                        {
+                            parsedInput += "\"," + byteData[i] + ",";
+                        }
+                    }
+                    else
+                    {
+                        //We have a simple string character
+                        if (i == 0 || (i > 0 && IsSpecialSymbol(input[i - 1])) ||
+                            (i > 1 && IsSpecialSymbol(input[i - 1], input[i - 2])))
+                        {
+                            parsedInput += "\"" + input[i];
+                        }
+                        else
+                        {
+                            parsedInput += input[i];
+                        }
+                        if (i == byteData.Length - 1)
+                        {
+                            parsedInput += "\",";
+                        }
+                    }
+                }
+                parsedInput += "0";
+                Variable v = new Variable(new AST_Variable(null, "lpcstr", parsedInput),
+                    ParameterType.GetParameterType("lpcstr"),
+                    new Address("lpcstr" + values.Count.ToString(), -3));
+                values.Add(v);
+                return v;
+            }
             public Variable Find(Predicate<Variable> predicate) => values.Find(predicate);
             public override string ConvertToString()
             {
@@ -112,7 +230,7 @@ namespace SALO_Core.CodeBlocks
                 foreach (var t in values)
                 {
                     if (t.address.length != -3)
-                        throw new ASS_Exception(t.address.address + 
+                        throw new ASS_Exception(t.address.address +
                             " is not considered a proper global variable", -1);
                     result += t.address.address + " " +
                         ToDataTypeLabel(t.dataType) + " " +
@@ -310,7 +428,7 @@ namespace SALO_Core.CodeBlocks
             public string address;
             public int offset;
             /// <summary>
-            /// -1 for register, -2 for constant, -3 for variable labels
+            /// -1 for register, -2 for constant, -3 for global variable labels
             /// </summary>
             public int length;
             public Address(string baseAddress)
@@ -352,11 +470,14 @@ namespace SALO_Core.CodeBlocks
                     case -1:
                         return address;
                     case 1:
-                        return "byte ptr " + address + "+" + offset.ToString();
+                        return "byte ptr " + address +  (offset < 0 ? "-" + (-offset).ToString() :
+                            "+" + offset.ToString());
                     case 2:
-                        return "word ptr " + address + "+" + offset.ToString();
+                        return "word ptr " + address + (offset < 0 ? "-" + (-offset).ToString() :
+                            "+" + offset.ToString());
                     default:
-                        return "ptr " + address + "+" + offset.ToString();
+                        return "dword ptr " + address + (offset < 0 ? "-" + (-offset).ToString() :
+                            "+" + offset.ToString());
                 }
             }
             public static int GetLength(IParameterType dataType)
@@ -374,6 +495,24 @@ namespace SALO_Core.CodeBlocks
                     return true;
                 }
                 throw new NotImplementedException("Register " + address + " is not supported");
+            }
+            public bool IsConstant()
+            {
+                if (length == -2) return true;
+                return false;
+            }
+            public bool IsGlobalVariableLabel()
+            {
+                if (length == -3) return true;
+                return false;
+            }
+            public bool IsStack()
+            {
+                if (IsConstant()) return false;
+                if (IsGlobalVariableLabel()) return false;
+                if (IsRegister()) return false;
+                if (address == "ebp") return true;
+                return false;
             }
         }
         public class Variable
@@ -430,12 +569,12 @@ namespace SALO_Core.CodeBlocks
             public Variable GetFreeAddress(AST_Variable variable, IParameterType dataType)
             {
                 Variable result;
-                if (!axTaken)
+                /*if (!axTaken)
                 {
                     axTaken = true;
                     return new Variable(null, dataType, new Address("eax", -1));
                 }
-                else if (!bxTaken)
+                else */if (!bxTaken)
                 {
                     bxTaken = true;
                     return new Variable(null, dataType, new Address("ebx", -1));
@@ -470,12 +609,12 @@ namespace SALO_Core.CodeBlocks
                 if (dataType.GetLengthInBytes() > 0)
                 {
                     string reg = "";
-                    if (axTaken == false)
+                    /*if (axTaken == false)
                     {
                         reg = "eax";
                         axTaken = true;
                     }
-                    else if (bxTaken == false)
+                    else */if (bxTaken == false)
                     {
                         reg = "ebx";
                         bxTaken = true;
@@ -542,12 +681,16 @@ namespace SALO_Core.CodeBlocks
                 {
                     return;
                 }
+                else if (oldVariable.address.length == -3)
+                {
+                    return;
+                }
                 else
                 {
                     //Check for function parameters
                     if (stack.Count == 0 &&
-                        oldVariable.address.address == "ebp" &&
-                        oldVariable.address.offset > 0) return;
+                        oldVariable.address.address == "ebp"/* &&
+                        oldVariable.address.offset > 0*/) return;
                     if (stack.Peek() != oldVariable)
                     {
                         throw new ASS_Exception("Memory manager stack corrupt", -1);
@@ -565,7 +708,7 @@ namespace SALO_Core.CodeBlocks
             public FunctionType functionType;
             public AST_Type returnValue;
             string start, end;
-            bool usesReturns = false;
+            bool usesReturns = false, usesLocals = false;
             MemoryManager memoryManager;
             CB_Assembler_New parent;
             public Function(AST_Function ast_function, CB_Assembler_New parent)
@@ -610,7 +753,7 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (functionType == FunctionType.stdcall)
                     {
-                        end += "  ret " + GetByteCount().ToString() + AST_Program.separator_line;
+                        end += "  ret " + GetByteCount(parameters).ToString() + AST_Program.separator_line;
                     }
                     else throw new NotImplementedException(functionType + " is not supported");
                 }
@@ -633,10 +776,11 @@ namespace SALO_Core.CodeBlocks
                 }
                 return result;
             }
-            public int GetByteCount()
-            {
-                return GetByteCount(parameters);
-            }
+            //This function was ambiguous
+            //public int GetByteCount()
+            //{
+            //    return GetByteCount(parameters);
+            //}
             public string ConvertToString()
             {
                 string result = "";
@@ -649,6 +793,7 @@ namespace SALO_Core.CodeBlocks
                 }
                 result += name + ":" + AST_Program.separator_line;
                 result += start;
+                string tempResult = "";
 
                 foreach (AST_Expression input in ast_function.expressions)
                 {
@@ -657,12 +802,28 @@ namespace SALO_Core.CodeBlocks
                     {
                         ParseNative((AST_Native)input, out resString);
                     }
+                    else if (input is AST_LocalVariable)
+                    {
+                        ParseLocal((AST_LocalVariable)input, out resString);
+                    }
+                    else if (input is AST_Logic)
+                    {
+                        ParseLogic((AST_Logic)input, out resString);
+                    }
                     else
                     {
-                        ParseExpression(input, out resString);
+                        var resVariable = ParseExpression(input, out resString);
+                        if (resVariable.address.IsRegister()) memoryManager.SetFreeAddress(resVariable);
                     }
-                    result += resString;
+                    tempResult += resString;
                 }
+                if(locals.Count > 0 && usesLocals)
+                {
+                    int ceilingInput = GetByteCount(locals);
+                    int ceilingResult = ((ceilingInput / 16) + (ceilingInput % 16 == 0 ? 0 : 1)) * 16;
+                    result += "\t  sub\tesp,\t" + ceilingResult.ToString() + AST_Program.separator_line;
+                }
+                result += tempResult;
                 if (usesReturns)
                 {
                     result += "." + name + "_return:" + AST_Program.separator_line;
@@ -670,9 +831,33 @@ namespace SALO_Core.CodeBlocks
                 result += end;
                 return result;
             }
+            private void ParseLogic (AST_Logic input, out string resString)
+            {
+                resString = "";
+            }
             private void ParseNative(AST_Native input, out string resString)
             {
                 resString = input.code + AST_Program.separator_line;
+            }
+            private void ParseLocal(AST_LocalVariable input, out string resString)
+            {
+                AST_Variable variable = (AST_Variable)input.childNodes.First.Value;
+                int addr = 0;
+                if(locals.Count > 0)
+                {
+                    addr = locals[locals.Count - 1].address.offset;
+                }
+                addr -= variable.DataType.GetLengthInBytes();
+                if(locals.Find(a => a.ast_variable.Data == variable.Data) != null)
+                {
+                    //We already declared a local variable wih this name
+                    throw new ASS_Exception("Local variable declaration exception",
+                        new ASS_Exception("Variable " + variable.Data + " was already declared in this function",
+                        -1), -1);
+                }
+                locals.Add(new Variable(variable, variable.DataType, new Address("ebp", variable.DataType, addr)));
+                //In case we need it for the future
+                resString = "";
             }
             private Variable ParseExpression(AST_Expression input, out string resString)
             {
@@ -681,11 +866,18 @@ namespace SALO_Core.CodeBlocks
 #if DEBUG
                 string output = "";
                 exp.Print("", false, ref output);
-                //Console.WriteLine(output);
+                Console.WriteLine(output);
 #endif
                 resString = "";
+                if ((exp.head.exp_Type == Exp_Type.Operator && exp.head.exp_Operator.init &&
+                    (exp.head.exp_Data == "=" || exp.head.exp_Data == "return")) ||
+                    (exp.head.exp_Type == Exp_Type.Function))
+                {
+                    return ParseExpNode(input, exp.head, out resString);
+                }
+                else throw new ASS_Exception("Bad expression format",
+                    new ASS_Exception("Statement should be assignment or a function call", -1), -1);
                 //return null;
-                return ParseExpNode(input, exp.head, out resString);
             }
             private Variable ParseExpNode(AST_Expression exp, Exp_Node input, out string resString)
             {
@@ -735,6 +927,8 @@ namespace SALO_Core.CodeBlocks
                                 result += "\t  mov\teax,\t" + rightOutVar.address.ConvertToString() +
                                     AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(rightOutVar);
+                                rightOutVar = new Variable(null, rightOutVar.dataType, new Address("eax", -1));
+                                memoryManager.UpdateRegisterUsage(rightOutVar);
                             }
 
                             if (this.ast_function.expressions.Last.Value != exp)
@@ -742,7 +936,27 @@ namespace SALO_Core.CodeBlocks
                                 usesReturns = true;
                                 result += "\t  jmp\t." + name + "_return" + AST_Program.separator_line;
                             }
-                            res = null;
+                            res = rightOutVar;
+                        }
+                        else if(input.exp_Type == Exp_Type.Operator && input.exp_Operator.init)
+                        {
+                            string rightOutStr = "";
+                            Variable rightOutVar = null;
+                            rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
+                            result += rightOutStr;
+
+                            if (input.exp_Data == "&")
+                            {
+                                Variable rightTempVar = memoryManager.GetFreeAddress(null,
+                                    ParameterType.GetParameterType("int32"));
+
+                                result += "\t  lea\t" + rightTempVar.address.ConvertToString() +
+                                    ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                                memoryManager.SetFreeAddress(rightOutVar);
+
+                                res = rightTempVar;
+                            }
+                            else throw new NotImplementedException(input.exp_Data + " is not supported");
                         }
                         else throw new NotImplementedException(input.exp_Data + " is not supported");
                     }
@@ -753,7 +967,19 @@ namespace SALO_Core.CodeBlocks
                         Variable leftOutVar = null;
                         leftOutVar = ParseExpNode(exp, input.left, out leftOutStr);
                         result += leftOutStr;
-                        if (!leftOutVar.address.IsRegister())
+
+                        Variable rightOutVar = null;
+                        string rightOutStr = "";
+                        if ((input.right.exp_Type == Exp_Type.Operator && input.right.exp_Operator.init &&
+                            input.right.exp_Operator.layer < input.exp_Operator.layer) ||
+                            input.right.exp_Type == Exp_Type.Function ||
+                            true)
+                        {
+                            rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
+                        }
+                        if (leftOutVar.address.IsConstant() || leftOutVar.address.IsGlobalVariableLabel() ||
+                            (leftOutVar.address.IsStack() && 
+                            (rightOutVar.address.IsStack() || input.exp_Data != "=")))
                         {
                             //We have to move our expression result to eax
                             Variable leftTempVar = leftOutVar;
@@ -763,17 +989,7 @@ namespace SALO_Core.CodeBlocks
                                 ",\t" + leftTempVar.address.ConvertToString() + AST_Program.separator_line;
                             memoryManager.SetFreeAddress(leftTempVar);
                         }
-
-                        Variable rightOutVar = null;
-                        if ((input.right.exp_Type == Exp_Type.Operator && input.right.exp_Operator.init &&
-                            input.right.exp_Operator.layer < input.exp_Operator.layer) ||
-                            input.right.exp_Type == Exp_Type.Function ||
-                            true)
-                        {
-                            string rightOutStr = "";
-                            rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
-                            result += rightOutStr;
-                        }
+                        result += rightOutStr;
                         if (!leftOutVar.dataType.Equals(rightOutVar.dataType))
                         {
                             throw new NotImplementedException("Can\'t perform " + input.exp_Data +
@@ -794,13 +1010,32 @@ namespace SALO_Core.CodeBlocks
                             res = leftOutVar;
                             memoryManager.SetFreeAddress(rightOutVar);
                         }
+                        else if (input.exp_Data == "=")
+                        {
+                            if (input.left.exp_Type != Exp_Type.Variable)
+                            {
+                                throw new ASS_Exception("Can\'t assign to " + input.left.exp_Type.ToString(),
+                                    new ASS_Exception("Assignment is supported only for variables", -1), -1);
+                            }
+                            result += "\t  mov\t" + leftOutVar.address.ConvertToString() +
+                                ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                            res = leftOutVar;
+                            memoryManager.SetFreeAddress(rightOutVar);
+                        }
                         else throw new NotImplementedException(input.exp_Data + " is not supported");
                     }
                     else throw new NotImplementedException(input.exp_Data + " is not supported");
                 }
                 else if (input.exp_Type == Exp_Type.Constant)
                 {
-                    res = new Variable(null, GetDataType(input), new Address(input.exp_Data, -2));
+                    if (GetDataType(input).GetName() == "lpcstr")
+                    {
+                        res = parent.sec3.DeclareString(input.exp_Data);
+                    }
+                    else
+                    {
+                        res = new Variable(null, GetDataType(input), new Address(input.exp_Data, -2));
+                    }
                 }
                 else if (input.exp_Type == Exp_Type.Variable)
                 {
@@ -809,7 +1044,7 @@ namespace SALO_Core.CodeBlocks
                     if (foundVar == null)
                     {
                         //Search function parameters
-                        foundVar = parameters.Find(a => a.ast_variable != null && 
+                        foundVar = parameters.Find(a => a.ast_variable != null &&
                             a.ast_variable.Data == input.exp_Data);
                         if (foundVar == null)
                         {
@@ -820,6 +1055,10 @@ namespace SALO_Core.CodeBlocks
                                 throw new ASS_Exception("Failed to parse variable usage",
                                     new ASS_Exception("Variable " + input.exp_Data + " was not found", -1), -1);
                         }
+                    }
+                    else
+                    {
+                        usesLocals = true;
                     }
                     res = foundVar;
                 }
@@ -874,14 +1113,14 @@ namespace SALO_Core.CodeBlocks
                         else
                         {
                             string paramList = "";
-                            foreach(var par in fParameters)
+                            foreach (var par in fParameters)
                             {
                                 paramList += par.dataType.GetName() + ", ";
                             }
                             if (fParameters.Count > 0)
                                 paramList = paramList.Remove(paramList.Length - 2);
                             throw new ASS_Exception(
-                                "Function " + input.exp_Data + "(" + paramList + 
+                                "Function " + input.exp_Data + "(" + paramList +
                                 ") was not found. Perhaps, it was private?", -1);
                         }
                     }
@@ -908,11 +1147,11 @@ namespace SALO_Core.CodeBlocks
                             }
                             if (location == 1)
                             {
-                                result += "\t call\t [" + input.exp_Data + "]" + AST_Program.separator_line;
+                                result += "\t call\t[" + input.exp_Data + "]" + AST_Program.separator_line;
                             }
                             else if (location == 2)
                             {
-                                result += "\t call\t " + input.exp_Data + AST_Program.separator_line;
+                                result += "\t call\t" + input.exp_Data + AST_Program.separator_line;
                             }
                             else throw new NotImplementedException("Location " + location + " is not supported");
                             //TODO - track eax to avoid memory leaks - they should happen here
@@ -933,6 +1172,7 @@ namespace SALO_Core.CodeBlocks
                                 //TODO - calculate return type
                                 res = new Variable(null, ParameterType.GetParameterType("int32"),
                                     new Address("eax", -1));
+                                memoryManager.UpdateRegisterUsage(res);
                             }
                         }
                         else if (fUsed.functionType == FunctionType.stdcall)
@@ -1018,6 +1258,10 @@ namespace SALO_Core.CodeBlocks
                 }
                 else
                 {
+                    if (node.exp_Data[0] == '\"' && node.exp_Data[node.exp_Data.Length - 1] == '\"')
+                    {
+                        return ParameterType.GetParameterType("lpcstr");
+                    }
                     Int32 valInt32 = 0;
                     if (Int32.TryParse(node.exp_Data, out valInt32))
                     {

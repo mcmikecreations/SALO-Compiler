@@ -20,13 +20,14 @@ namespace SALO_Core.CodeBlocks.Expressions
         }
         public Exp_Node_New(Exp_Node_New left, Exp_Node_New right,
                             List<string> input,
-                            string exp_Data, Exp_Type exp_Type)
+                            string exp_Data, Exp_Type exp_Type, AST_Operator exp_Operator)
         {
             this.left = left;
             this.right = right;
             this.input = input;
             this.exp_Data = exp_Data;
             this.exp_Type = exp_Type;
+            this.exp_Operator = exp_Operator;
         }
         private Exp_Node_New(List<Exp_Piece> input, int charInd)
         {
@@ -64,6 +65,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                 {
                     exp_Type = input[0].inNode.exp_Type;
                     exp_Data = input[0].inNode.exp_Data;
+                    exp_Operator = input[0].inNode.exp_Operator;
                     left = input[0].inNode.left;
                     right = input[0].inNode.right;
                     this.input = input[0].inNode.input;
@@ -195,7 +197,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 input.RemoveRange(opIndexes[op], 2);
                                 Exp_Node_New functionNode = new Exp_Node_New(
                                     null, null, null,
-                                    input[opIndexes[op] - 1].inStrg, Exp_Type.Function);
+                                    input[opIndexes[op] - 1].inStrg, Exp_Type.Function, new AST_Operator());
                                 input.RemoveRange(opIndexes[op] - 1, 1);
                                 Exp_Piece bracketsPiece = new Exp_Piece
                                 {
@@ -234,7 +236,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 Exp_Node_New functionNode = new Exp_Node_New(
                                     null, bracketsNode,
                                     null,
-                                    input[opIndexes[op] - 1].inStrg, Exp_Type.Function);
+                                    input[opIndexes[op] - 1].inStrg, Exp_Type.Function, new AST_Operator());
                                 input.RemoveRange(opIndexes[op] - 1, 1);
                                 bracketsPiece = new Exp_Piece
                                 {
@@ -302,7 +304,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New rightResult = new Exp_Node_New(
                                 null, rightNode,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator)
+                                ops[op].oper, Exp_Type.Operator, ops[op])
                             { exp_Operator = ops[op] };
                             Exp_Piece rightResultPiece = new Exp_Piece
                             {
@@ -335,7 +337,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New rightResult = new Exp_Node_New(
                                 null, rightNode,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator)
+                                ops[op].oper, Exp_Type.Operator, ops[op])
                             { exp_Operator = ops[op] };
                             Exp_Piece rightResultPiece = new Exp_Piece
                             {
@@ -382,7 +384,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New leftResult = new Exp_Node_New(
                                 leftNode, null,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator)
+                                ops[op].oper, Exp_Type.Operator, ops[op])
                             { exp_Operator = ops[op] };
                             Exp_Piece leftResultPiece = new Exp_Piece
                             {
@@ -414,7 +416,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             Exp_Node_New leftResult = new Exp_Node_New(
                                 leftNode, null,
                                 new List<string>(ToListString(content)),
-                                ops[op].oper, Exp_Type.Operator)
+                                ops[op].oper, Exp_Type.Operator, ops[op])
                             { exp_Operator = ops[op] };
                             Exp_Piece leftResultPiece = new Exp_Piece
                             {
@@ -472,7 +474,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 leftNode, rightNode,
                                 new List<string>(ToListString(contentLeft)).
                                     Union(new List<string>(ToListString(contentRight))).ToList(),
-                                ops[op].oper, Exp_Type.Operator)
+                                ops[op].oper, Exp_Type.Operator, ops[op])
                             { exp_Operator = ops[op] };
                             Exp_Piece infixResultPiece = new Exp_Piece
                             {
@@ -513,7 +515,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 leftNode, rightNode,
                                 new List<string>(ToListString(contentLeft)).
                                     Union(new List<string>(ToListString(contentRight))).ToList(),
-                                ops[op].oper, Exp_Type.Operator)
+                                ops[op].oper, Exp_Type.Operator, ops[op])
                             { exp_Operator = ops[op] };
                             Exp_Piece infixResultPiece = new Exp_Piece
                             {
@@ -585,6 +587,7 @@ namespace SALO_Core.CodeBlocks.Expressions
             this.input = result.input;
             this.exp_Type = result.exp_Type;
             this.exp_Data = result.exp_Data;
+            this.exp_Operator = result.exp_Operator;
             this.left = result.left;
             this.right = result.right;
         }

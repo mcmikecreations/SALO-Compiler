@@ -12,6 +12,7 @@ namespace SALO_Core.AST
 	{
 		public static readonly string separator_ast = "₴ \r\n\t";
 		public static readonly string separator_ast_nospace = "₴\r\n\t";
+		public static readonly string separator_ast_nosemicolon = " \r\n\t";
 		public static readonly string separator_line = "\r\n";
 		public override void Parse(string input, int charIndex)
 		{
