@@ -83,7 +83,7 @@ namespace SALO_Compiler
 					(args.Length < 3 || args[2] != "--nb") && 
 					(args.Length < 4 || args[3] != "--nb"))
 				{
-					File.WriteAllText(fileName + ".asm", builder_Global.Compiler.Result);
+					File.WriteAllText(fileName + ".asm", builder_Global.Compiler.Result, Encoding.GetEncoding(1251));
 				}
 			}
 			catch (SALO_Exception e)

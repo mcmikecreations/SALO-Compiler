@@ -15,10 +15,10 @@ namespace SALO_Core.AST
             input = input.Trim();
             if (string.IsNullOrWhiteSpace(input))
                 throw new AST_EmptyInputException("Provided string is empty", charIndex);
-            if (!input.StartsWith("native does") || !input.EndsWith("native ends"))
+            if (!input.StartsWith("native does") || !input.EndsWith("ends native"))
                 throw new AST_EmptyInputException("Provided string is not a native code piece", charIndex);
             input = input.Remove(0, "native does".Length);
-            input = input.Remove(input.Length - "native ends".Length);
+            input = input.Remove(input.Length - "ends native".Length);
             code = input;
         }
 

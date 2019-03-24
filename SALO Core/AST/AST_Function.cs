@@ -152,7 +152,7 @@ namespace SALO_Core.AST
                 }
                 i += "gives".Length;
                 string inputreturn = input.Substring(i, end - i);
-                string[] outputVars = inputreturn.Split(AST_Program.separator_ast_nospace.ToCharArray(),
+                string[] outputVars = inputreturn.Split(AST_Program.separator_ast.ToCharArray(),
                     StringSplitOptions.RemoveEmptyEntries);
                 if (outputVars.Length != 1)
                     throw new AST_BadFormatException("Too many or too few return values. Try using a structure instead",
@@ -230,7 +230,7 @@ namespace SALO_Core.AST
                     if (hasActualExpression)
                     {
                         string nat = ex.Trim();
-                        if (nat.StartsWith("native does") && nat.EndsWith("native ends"))
+                        if (nat.StartsWith("native does") && nat.EndsWith("ends native"))
                         {
                             expressions.AddLast(new AST_Native(this, nat, charIndex + exLength));
                         }
@@ -290,19 +290,20 @@ namespace SALO_Core.AST
                 if(input.IndexOf("native", i) == i)
                 {
                     int startIndex = i;
+                    startIndex += "native".Length;
                     while (AST_Program.separator_ast_nosemicolon.IndexOf(input[startIndex]) != -1) startIndex++;
                     if(input.IndexOf("does", startIndex) != startIndex)
                     {
                         throw new AST_BadFormatException("Bad formatting of native code start", charIndex + startIndex);
                     }
-                    int endIndex = input.IndexOf("native", startIndex);
-                    endIndex += "native".Length;
+                    int endIndex = input.IndexOf("ends", startIndex);
+                    endIndex += "ends".Length;
                     while (AST_Program.separator_ast_nosemicolon.IndexOf(input[endIndex]) != -1) endIndex++;
-                    if(input.IndexOf("ends", endIndex) != endIndex)
+                    if(input.IndexOf("native", endIndex) != endIndex)
                     {
                         throw new AST_BadFormatException("Bad formatting of native code end", charIndex + endIndex);
                     }
-                    endIndex += "ends".Length;
+                    endIndex += "native".Length;
                     while (AST_Program.separator_ast_nosemicolon.IndexOf(input[endIndex]) != -1) endIndex++;
                     if(input.IndexOf("₴", endIndex) != endIndex)
                     {

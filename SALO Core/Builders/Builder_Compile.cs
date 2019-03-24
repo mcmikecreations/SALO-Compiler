@@ -27,7 +27,7 @@ namespace SALO_Core.Builders
 					}
 				case Language.Assembler:
 					{
-						cb = new CB_Assembler_New(false, libs.libraries);
+						cb = new CB_Assembler_New(true, libs.libraries);
 						ast.Accept(cb);
 						break;
 					}

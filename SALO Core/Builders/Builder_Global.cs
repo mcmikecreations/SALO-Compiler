@@ -114,7 +114,7 @@ namespace SALO_Core.Builders
                             Libraries = new Builder_Libraries(settingsPath);
 							Compiler = new Builder_Compile(lang, AST, Libraries);
 #if DEBUG
-                            Console.WriteLine("ASM:");
+                            Console.WriteLine("Assembler:");
                             Console.WriteLine(Compiler.Result);
 #endif
                         }

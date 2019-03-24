@@ -27,7 +27,7 @@ namespace SALO_Core.CodeBlocks
         public int GetLengthInBytes()
         {
             //It is a pointer to a byte
-            return 1;
+            return 4;
         }
         public string GetName()
         {

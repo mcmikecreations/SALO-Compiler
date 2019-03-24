@@ -87,6 +87,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Tools\ClassExtensions.cs" />
     <Compile Include="Tools\ExceptionHandler.cs" />
     <Compile Include="Tools\Translitor.cs" />
   </ItemGroup>

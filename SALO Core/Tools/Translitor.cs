@@ -8,24 +8,6 @@ namespace SALO_Core.Tools
 {
 	public static class Translitor
 	{
-        public static void AppendRange<T>(this LinkedList<T> source,
-                                      IEnumerable<T> items)
-        {
-            foreach (T item in items)
-            {
-                source.AddLast(item);
-            }
-        }
-
-        public static void PrependRange<T>(this LinkedList<T> source,
-                                           IEnumerable<T> items)
-        {
-            LinkedListNode<T> first = source.First;
-            foreach (T item in items)
-            {
-                source.AddBefore(first, item);
-            }
-        }
         public static string Translit(string word)
 		{
 			if (string.IsNullOrWhiteSpace(word)) return word;
@@ -33,64 +15,142 @@ namespace SALO_Core.Tools
 			string output = "";
 			while (i < word.Length)
 			{
+                bool IsUpper = char.ToLower(word[i]) != word[i];
 				switch (char.ToLower(word[i]))
 				{
 					case 'а':
 						{
-							output += "a";
+                            if (IsUpper)
+                            {
+                                output += "A";
+                            }
+                            else
+                            {
+                                output += "a";
+                            }
 							break;
 						}
 					case 'б':
-						{
-							output += "b";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "B";
+                            }
+                            else
+                            {
+                                output += "b";
+                            }
+                            break;
 						}
 					case 'в':
-						{
-							output += "v";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "V";
+                            }
+                            else
+                            {
+                                output += "v";
+                            }
+                            break;
 						}
 					case 'г':
-						{
-							output += "h";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "H";
+                            }
+                            else
+                            {
+                                output += "h";
+                            }
+                            break;
 						}
 					case 'ґ':
-						{
-							output += "g";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "G";
+                            }
+                            else
+                            {
+                                output += "g";
+                            }
+                            break;
 						}
 					case 'д':
-						{
-							output += "d";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "D";
+                            }
+                            else
+                            {
+                                output += "d";
+                            }
+                            break;
 						}
 					case 'е':
-						{
-							output += "e";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "E";
+                            }
+                            else
+                            {
+                                output += "e";
+                            }
+                            break;
 						}
 					case 'є':
 						{
 							if (i == 0)
-							{
-								output += "ye";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "Ye";
+                                }
+                                else
+                                {
+                                    output += "ye";
+                                }
+                            }
 							else
-							{
-								output += "ie";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "Ie";
+                                }
+                                else
+                                {
+                                    output += "ie";
+                                }
+                            }
 							break;
 						}
 					case 'ж':
-						{
-							output += "zh";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "Zh";
+                            }
+                            else
+                            {
+                                output += "zh";
+                            }
+                            break;
 						}
 					case 'з':
-						{
-							output += "z";
-							if (i + 1 < word.Length && word[i + 1] == 'г')
+                        {
+                            if (IsUpper)
+                            {
+                                output += "Z";
+                            }
+                            else
+                            {
+                                output += "z";
+                            }
+                            if (i + 1 < word.Length && word[i + 1] == 'г')
 							{
 								output += "gh";
 								++i;
@@ -98,118 +158,272 @@ namespace SALO_Core.Tools
 							break;
 						}
 					case 'и':
-						{
-							output += "y";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "Y";
+                            }
+                            else
+                            {
+                                output += "y";
+                            }
+                            break;
 						}
 					case 'і':
-						{
-							output += "i";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "I";
+                            }
+                            else
+                            {
+                                output += "i";
+                            }
+                            break;
 						}
 					case 'ї':
 						{
 							if (i == 0)
-							{
-								output += "yi";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "Yi";
+                                }
+                                else
+                                {
+                                    output += "yi";
+                                }
+                            }
 							else
-							{
-								output += "i";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "I";
+                                }
+                                else
+                                {
+                                    output += "i";
+                                }
+                            }
 							break;
 						}
 					case 'й':
 						{
 							if (i == 0)
-							{
-								output += "y";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "Y";
+                                }
+                                else
+                                {
+                                    output += "y";
+                                }
+                            }
 							else
-							{
-								output += "i";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "I";
+                                }
+                                else
+                                {
+                                    output += "i";
+                                }
+                            }
 							break;
 						}
 					case 'к':
-						{
-							output += "k";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "K";
+                            }
+                            else
+                            {
+                                output += "k";
+                            }
+                            break;
 						}
 					case 'л':
-						{
-							output += "l";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "L";
+                            }
+                            else
+                            {
+                                output += "l";
+                            }
+                            break;
 						}
 					case 'м':
-						{
-							output += "m";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "M";
+                            }
+                            else
+                            {
+                                output += "m";
+                            }
+                            break;
 						}
 					case 'н':
-						{
-							output += "n";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "N";
+                            }
+                            else
+                            {
+                                output += "n";
+                            }
+                            break;
 						}
 					case 'о':
-						{
-							output += "o";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "O";
+                            }
+                            else
+                            {
+                                output += "o";
+                            }
+                            break;
 						}
 					case 'п':
-						{
-							output += "p";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "P";
+                            }
+                            else
+                            {
+                                output += "p";
+                            }
+                            break;
 						}
 					case 'р':
-						{
-							output += "r";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "R";
+                            }
+                            else
+                            {
+                                output += "r";
+                            }
+                            break;
 						}
 					case 'с':
-						{
-							output += "s";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "S";
+                            }
+                            else
+                            {
+                                output += "s";
+                            }
+                            break;
 						}
 					case 'т':
-						{
-							output += "t";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "T";
+                            }
+                            else
+                            {
+                                output += "t";
+                            }
+                            break;
 						}
 					case 'у':
-						{
-							output += "u";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "U";
+                            }
+                            else
+                            {
+                                output += "u";
+                            }
+                            break;
 						}
 					case 'ф':
-						{
-							output += "f";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "F";
+                            }
+                            else
+                            {
+                                output += "f";
+                            }
+                            break;
 						}
 					case 'х':
-						{
-							output += "kh";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "Kh";
+                            }
+                            else
+                            {
+                                output += "kh";
+                            }
+                            break;
 						}
 					case 'ц':
-						{
-							output += "ts";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "Ts";
+                            }
+                            else
+                            {
+                                output += "ts";
+                            }
+                            break;
 						}
 					case 'ч':
-						{
-							output += "ch";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "Ch";
+                            }
+                            else
+                            {
+                                output += "ch";
+                            }
+                            break;
 						}
 					case 'ш':
-						{
-							output += "sh";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "Sh";
+                            }
+                            else
+                            {
+                                output += "sh";
+                            }
+                            break;
 						}
 					case 'щ':
-						{
-							output += "shch";
-							break;
+                        {
+                            if (IsUpper)
+                            {
+                                output += "Shch";
+                            }
+                            else
+                            {
+                                output += "shch";
+                            }
+                            break;
 						}
 					case 'ь':
 						{
@@ -218,25 +432,53 @@ namespace SALO_Core.Tools
 					case 'ю':
 						{
 							if (i == 0)
-							{
-								output += "yu";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "Yu";
+                                }
+                                else
+                                {
+                                    output += "yu";
+                                }
+                            }
 							else
-							{
-								output += "iu";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "Iu";
+                                }
+                                else
+                                {
+                                    output += "iu";
+                                }
+                            }
 							break;
 						}
 					case 'я':
 						{
 							if (i == 0)
-							{
-								output += "ya";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "Ya";
+                                }
+                                else
+                                {
+                                    output += "ya";
+                                }
+                            }
 							else
-							{
-								output += "ia";
-							}
+                            {
+                                if (IsUpper)
+                                {
+                                    output += "Ia";
+                                }
+                                else
+                                {
+                                    output += "ia";
+                                }
+                            }
 							break;
 						}
 					case '`':

@@ -30,8 +30,49 @@ namespace SALO_Core.Builders
 					translated = translated.Replace(nt.locale, nt.translated);
 				}
 			}
-			
-			translated = Translitor.Translit(translated);
+
+            //Parse letter by letter, skip strings
+            int quoteIndex = 0;
+            string output = "";
+            while(quoteIndex < translated.Length)
+            {
+                bool breakLoop = false;
+                if(translated[quoteIndex] == '\"')
+                {
+                    if (quoteIndex == 0 || translated[quoteIndex - 1] != '\\')
+                    {
+                        //We have a quote start, find end
+                        int quoteStart = quoteIndex;
+                        ++quoteIndex;
+                        while (!(translated[quoteIndex] == '\"' && translated[quoteIndex - 1] != '\\'))
+                        {
+                            quoteIndex++;
+                            if (quoteIndex >= translated.Length)
+                            {
+                                //We reached the end
+                                output += translated.Substring(quoteStart);
+                                breakLoop = true;
+                                break;
+                            }
+                        }
+                        if (breakLoop) break;
+                        //quoteIndex is pointing at the closing quote
+                        output += translated.Substring(quoteStart, quoteIndex - quoteStart + 1);
+                    }
+                    else
+                    {
+                        output += '\"';
+                    }
+                }
+                else
+                {
+                    string s = "";
+                    s += translated[quoteIndex];
+                    output += Translitor.Translit(s);
+                }
+                ++quoteIndex;
+            }
+            translated = output;
 		}
 	}
 }
