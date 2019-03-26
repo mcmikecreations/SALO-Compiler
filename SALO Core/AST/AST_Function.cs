@@ -210,7 +210,7 @@ namespace SALO_Core.AST
                 }
                 i += "does".Length;
                 string inputcode = input.Substring(i, end - i);
-                string[] exps = Split(inputcode);//inputcode.Split(new char[] { '₴' }/*, StringSplitOptions.RemoveEmptyEntries*/);
+                string[] exps = Split(inputcode, charIndex);//inputcode.Split(new char[] { '₴' }/*, StringSplitOptions.RemoveEmptyEntries*/);
                 if (exps.Length > 0)
                 {
                     expressions = new LinkedList<AST_Expression>();
@@ -237,6 +237,14 @@ namespace SALO_Core.AST
                         else if (nat.StartsWith("if") && nat.EndsWith("ends if"))
                         {
                             expressions.AddLast(new AST_If(this, nat, charIndex + exLength));
+                        }
+                        else if (nat.StartsWith("while") && nat.EndsWith("ends while"))
+                        {
+                            expressions.AddLast(new AST_While(this, nat, charIndex + exLength));
+                        }
+                        else if (nat.StartsWith("for") && nat.EndsWith("ends for"))
+                        {
+                            expressions.AddLast(new AST_For(this, nat, charIndex + exLength));
                         }
                         else
                         {
@@ -278,7 +286,7 @@ namespace SALO_Core.AST
             }
         }
 
-        public string[] Split(string input)
+        public static string[] Split(string input, int charIndex)
         {
             List<string> nodes = new List<string>();
             int i = 0;
@@ -403,6 +411,196 @@ namespace SALO_Core.AST
                     if (input.IndexOf("₴", insideIndexEnd) != insideIndexEnd)
                     {
                         throw new AST_BadFormatException("Semicolon not found at the end of an if block", charIndex + insideIndexEnd);
+                    }
+
+                    expression = input.Substring(i, insideIndexEnd - i);
+                    i = insideIndexEnd + 1;
+                }
+                else if (input.IndexOf("while", i) == i)
+                {
+                    int startIndex = i;
+                    startIndex += "while".Length;
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[startIndex]) != -1) startIndex++;
+                    if (input.IndexOf("(", startIndex) != startIndex)
+                    {
+                        throw new AST_BadFormatException("Bad formatting of while statement condition brackets", charIndex + startIndex);
+                    }
+
+                    Stack<string> brackets = new Stack<string>();
+                    int insideIndexEnd = startIndex + 1;
+                    brackets.Push("(");
+                    while (brackets.Count > 0)
+                    {
+                        if (input[insideIndexEnd] == '(')
+                        {
+                            brackets.Push("(");
+                            insideIndexEnd++;
+                        }
+                        else if (input[insideIndexEnd] == ')')
+                        {
+                            if (brackets.Peek() == "(")
+                            {
+                                brackets.Pop();
+                                insideIndexEnd++;
+                            }
+                            else
+                            {
+                                throw new AST_BadFormatException("Failed to parse conditional expression inside while",
+                                    new AST_BadFormatException("Encountered unexpected tokens in bracket stack",
+                                    charIndex + insideIndexEnd), charIndex + insideIndexEnd);
+                            }
+                        }
+                        else insideIndexEnd++;
+                        if (input.Length <= insideIndexEnd)
+                        {
+                            throw new AST_BadFormatException("Reached end of input while parsing while brackets",
+                                charIndex + insideIndexEnd);
+                        }
+                    }
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
+
+                    if (input.IndexOf("does", insideIndexEnd) != insideIndexEnd)
+                    {
+                        //We failed to find if body
+                        throw new AST_BadFormatException("Conditional statement body was not found", charIndex + insideIndexEnd);
+                    }
+
+                    Stack<string> codeSegments = new Stack<string>();
+                    codeSegments.Push("does");
+                    int codeSegmentStart = insideIndexEnd;
+                    insideIndexEnd++;
+                    while (codeSegments.Count > 0)
+                    {
+                        if (input.IndexOf("does", insideIndexEnd) == insideIndexEnd)
+                        {
+                            codeSegments.Push("does");
+                        }
+                        else if (input.IndexOf("ends", insideIndexEnd) == insideIndexEnd)
+                        {
+                            if (codeSegments.Peek() != "does")
+                            {
+                                throw new AST_BadFormatException("Failed to parse conditional expression inside while",
+                                    new AST_BadFormatException("Encountered unexpected tokens in bracket stack",
+                                    charIndex + insideIndexEnd), charIndex + insideIndexEnd);
+                            }
+                            codeSegments.Pop();
+                        }
+                        insideIndexEnd++;
+                        if (input.Length <= insideIndexEnd && codeSegments.Count > 0)
+                        {
+                            throw new AST_BadFormatException("Reached end of input while parsing while body",
+                                charIndex + insideIndexEnd);
+                        }
+                    }
+                    //insideIndexEnd points at letter n from "ends"
+                    insideIndexEnd--;
+                    insideIndexEnd += "ends".Length;
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
+                    if (input.IndexOf("while", insideIndexEnd) != insideIndexEnd)
+                    {
+                        throw new AST_BadFormatException("\"while\" not found at the end of an while block", charIndex + insideIndexEnd);
+                    }
+                    insideIndexEnd += "while".Length;
+
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
+                    if (input.IndexOf("₴", insideIndexEnd) != insideIndexEnd)
+                    {
+                        throw new AST_BadFormatException("Semicolon not found at the end of an while block", charIndex + insideIndexEnd);
+                    }
+
+                    expression = input.Substring(i, insideIndexEnd - i);
+                    i = insideIndexEnd + 1;
+                }
+                else if (input.IndexOf("for", i) == i)
+                {
+                    int startIndex = i;
+                    startIndex += "for".Length;
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[startIndex]) != -1) startIndex++;
+                    if (input.IndexOf("(", startIndex) != startIndex)
+                    {
+                        throw new AST_BadFormatException("Bad formatting of for statement condition brackets", charIndex + startIndex);
+                    }
+
+                    Stack<string> brackets = new Stack<string>();
+                    int insideIndexEnd = startIndex + 1;
+                    brackets.Push("(");
+                    while (brackets.Count > 0)
+                    {
+                        if (input[insideIndexEnd] == '(')
+                        {
+                            brackets.Push("(");
+                            insideIndexEnd++;
+                        }
+                        else if (input[insideIndexEnd] == ')')
+                        {
+                            if (brackets.Peek() == "(")
+                            {
+                                brackets.Pop();
+                                insideIndexEnd++;
+                            }
+                            else
+                            {
+                                throw new AST_BadFormatException("Failed to parse conditional expression inside for",
+                                    new AST_BadFormatException("Encountered unexpected tokens in bracket stack",
+                                    charIndex + insideIndexEnd), charIndex + insideIndexEnd);
+                            }
+                        }
+                        else insideIndexEnd++;
+                        if (input.Length <= insideIndexEnd)
+                        {
+                            throw new AST_BadFormatException("Reached end of input while parsing for brackets",
+                                charIndex + insideIndexEnd);
+                        }
+                    }
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
+
+                    if (input.IndexOf("does", insideIndexEnd) != insideIndexEnd)
+                    {
+                        //We failed to find if body
+                        throw new AST_BadFormatException("Conditional statement body was not found", charIndex + insideIndexEnd);
+                    }
+
+                    Stack<string> codeSegments = new Stack<string>();
+                    codeSegments.Push("does");
+                    int codeSegmentStart = insideIndexEnd;
+                    insideIndexEnd++;
+                    while (codeSegments.Count > 0)
+                    {
+                        if (input.IndexOf("does", insideIndexEnd) == insideIndexEnd)
+                        {
+                            codeSegments.Push("does");
+                        }
+                        else if (input.IndexOf("ends", insideIndexEnd) == insideIndexEnd)
+                        {
+                            if (codeSegments.Peek() != "does")
+                            {
+                                throw new AST_BadFormatException("Failed to parse conditional expression inside for",
+                                    new AST_BadFormatException("Encountered unexpected tokens in bracket stack",
+                                    charIndex + insideIndexEnd), charIndex + insideIndexEnd);
+                            }
+                            codeSegments.Pop();
+                        }
+                        insideIndexEnd++;
+                        if (input.Length <= insideIndexEnd && codeSegments.Count > 0)
+                        {
+                            throw new AST_BadFormatException("Reached end of input while parsing for body",
+                                charIndex + insideIndexEnd);
+                        }
+                    }
+                    //insideIndexEnd points at letter n from "ends"
+                    insideIndexEnd--;
+                    insideIndexEnd += "ends".Length;
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
+                    if (input.IndexOf("for", insideIndexEnd) != insideIndexEnd)
+                    {
+                        throw new AST_BadFormatException("\"for\" not found at the end of a for block", charIndex + insideIndexEnd);
+                    }
+                    insideIndexEnd += "for".Length;
+
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
+                    if (input.IndexOf("₴", insideIndexEnd) != insideIndexEnd)
+                    {
+                        throw new AST_BadFormatException("Semicolon not found at the end of a for block", charIndex + insideIndexEnd);
                     }
 
                     expression = input.Substring(i, insideIndexEnd - i);

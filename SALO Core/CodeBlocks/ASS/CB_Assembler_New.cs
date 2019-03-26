@@ -942,6 +942,145 @@ namespace SALO_Core.CodeBlocks
                     else throw new ASS_Exception("Bad expression format",
                         new ASS_Exception(exp.head.exp_Data + " is not supported", -1), -1);
                 }
+                else if (input is AST_While)
+                {
+                    AST_While statement = (AST_While)input;
+
+                    Exp_Statement exp = new Exp_Statement(statement.inside.nodes);
+#if DEBUG
+                    string output = "";
+                    exp.Print("", false, ref output);
+                    Console.WriteLine(output);
+#endif
+                    if (IsOperatorLogic(exp.head.exp_Operator))
+                    {
+                        //Create a label to get out of scope
+                        string startLabel = ".L" + (localLabels++).ToString();
+                        string restLabel = ".L" + (localLabels++).ToString();
+
+                        result += startLabel + ":" + AST_Program.separator_line;
+
+                        //Parse conditional expression
+                        string conditionResultString = "";
+                        var conditionReturn = ParseLogicNode(statement.inside, exp.head,
+                            out conditionResultString, restLabel);
+                        memoryManager.SetFreeAddress(conditionReturn);
+                        if (parent.addComments)
+                        {
+                            result += ";logical statement " + string.Join(" ", statement.inside.nodes) +
+                                AST_Program.separator_line;
+                        }
+                        result += conditionResultString;
+
+                        //Parse expressions inside of the scope
+                        string expressionOutput = "";
+                        foreach (var scopedAstExpression in statement.expressions)
+                        {
+                            string scopedExpressionOutput = "";
+
+                            if (scopedAstExpression is AST_Native)
+                            {
+                                ParseNative((AST_Native)scopedAstExpression, out scopedExpressionOutput);
+                            }
+                            else if (scopedAstExpression is AST_LocalVariable)
+                            {
+                                ParseLocal((AST_LocalVariable)scopedAstExpression, out scopedExpressionOutput);
+                            }
+                            else if (scopedAstExpression is AST_Logic)
+                            {
+                                ParseLogic((AST_Logic)scopedAstExpression, out scopedExpressionOutput);
+                            }
+                            else
+                            {
+                                var resVariable = ParseExpression(scopedAstExpression, out scopedExpressionOutput);
+                                if (resVariable.address.IsRegister()) memoryManager.SetFreeAddress(resVariable);
+                            }
+
+                            expressionOutput += scopedExpressionOutput;
+                        }
+                        result += expressionOutput;
+                        result += "\t  jmp\t" + startLabel + AST_Program.separator_line;
+
+                        result += restLabel + ":" + AST_Program.separator_line;
+                    }
+                    else throw new ASS_Exception("Bad expression format",
+                        new ASS_Exception(exp.head.exp_Data + " is not supported", -1), -1);
+                }
+                else if (input is AST_For)
+                {
+                    AST_For statement = (AST_For)input;
+
+                    string initExpressionOutput = "";
+                    var initResVariable = ParseExpression(statement.initializer, out initExpressionOutput);
+                    if (initResVariable.address.IsRegister()) memoryManager.SetFreeAddress(initResVariable);
+                    result += initExpressionOutput;
+
+                    Exp_Statement exp = new Exp_Statement(statement.condition.nodes);
+#if DEBUG
+                    string output = "";
+                    exp.Print("", false, ref output);
+                    Console.WriteLine(output);
+#endif
+                    if (IsOperatorLogic(exp.head.exp_Operator))
+                    {
+                        //Create a label to get out of scope
+                        string startLabel = ".L" + (localLabels++).ToString();
+                        string restLabel = ".L" + (localLabels++).ToString();
+
+                        result += startLabel + ":" + AST_Program.separator_line;
+
+                        //Parse conditional expression
+                        string conditionResultString = "";
+                        var conditionReturn = ParseLogicNode(statement.condition, exp.head,
+                            out conditionResultString, restLabel);
+                        memoryManager.SetFreeAddress(conditionReturn);
+                        if (parent.addComments)
+                        {
+                            result += ";logical statement " + string.Join(" ", statement.condition.nodes) +
+                                AST_Program.separator_line;
+                        }
+                        result += conditionResultString;
+
+                        //Parse expressions inside of the scope
+                        string expressionOutput = "";
+                        foreach (var scopedAstExpression in statement.expressions)
+                        {
+                            string scopedExpressionOutput = "";
+
+                            if (scopedAstExpression is AST_Native)
+                            {
+                                ParseNative((AST_Native)scopedAstExpression, out scopedExpressionOutput);
+                            }
+                            else if (scopedAstExpression is AST_LocalVariable)
+                            {
+                                ParseLocal((AST_LocalVariable)scopedAstExpression, out scopedExpressionOutput);
+                            }
+                            else if (scopedAstExpression is AST_Logic)
+                            {
+                                ParseLogic((AST_Logic)scopedAstExpression, out scopedExpressionOutput);
+                            }
+                            else
+                            {
+                                var resVariable = ParseExpression(scopedAstExpression, out scopedExpressionOutput);
+                                if (resVariable.address.IsRegister()) memoryManager.SetFreeAddress(resVariable);
+                            }
+
+                            expressionOutput += scopedExpressionOutput;
+                        }
+                        result += expressionOutput;
+
+                        string loopExpressionOutput = "";
+                        var loopResVariable = ParseExpression(statement.loop, out loopExpressionOutput);
+                        if (loopResVariable.address.IsRegister()) memoryManager.SetFreeAddress(loopResVariable);
+                        result += loopExpressionOutput;
+
+                        result += "\t  jmp\t" + startLabel + AST_Program.separator_line;
+
+                        result += restLabel + ":" + AST_Program.separator_line;
+                    }
+                    else throw new ASS_Exception("Bad expression format",
+                        new ASS_Exception(exp.head.exp_Data + " is not supported", -1), -1);
+                }
                 else throw new NotImplementedException(input.GetType().ToString() + " is not yet supported");
 
                 resString = result;
@@ -1234,6 +1373,11 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (input.left != null && input.right != null)
                     {
+                        if(input.exp_Operator.init && input.exp_Operator.oper == "=" && 
+                            input.left.exp_Type != Exp_Type.Variable)
+                        {
+                            throw new ASS_Exception("Can\'t parse expression because lValue is not a variable", -1);
+                        }
                         //Parse left, then right, then operator
                         string leftOutStr = "";
                         Variable leftOutVar = null;
@@ -1241,7 +1385,8 @@ namespace SALO_Core.CodeBlocks
                         result += leftOutStr;
 
                         if (leftOutVar.address.IsConstant() || leftOutVar.address.IsGlobalVariableLabel() ||
-                            (leftOutVar.address.IsStack() &&
+                            (leftOutVar.address.IsStack() && 
+                            (!input.exp_Operator.init || input.exp_Operator.oper !=  "=") &&
                             ((input.right.exp_Operator.init == true && input.right.exp_Operator.oper != "=") 
                             /* TODO - check if right is on stack */ || input.exp_Data != "=")))
                         {

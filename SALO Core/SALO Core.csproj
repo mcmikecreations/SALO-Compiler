@@ -51,6 +51,7 @@
     <Compile Include="AST\AST_Function.cs" />
     <Compile Include="AST\AST_Include.cs" />
     <Compile Include="AST\AST_LocalVariable.cs" />
+    <Compile Include="AST\Logic\AST_For.cs" />
     <Compile Include="AST\Logic\AST_If.cs" />
     <Compile Include="AST\Logic\AST_Logic.cs" />
     <Compile Include="AST\AST_Native.cs" />
@@ -60,6 +61,7 @@
     <Compile Include="AST\Data\AST_Data.cs" />
     <Compile Include="AST\Data\AST_Type.cs" />
     <Compile Include="AST\Data\AST_Variable.cs" />
+    <Compile Include="AST\Logic\AST_While.cs" />
     <Compile Include="Builders\Builder_AST.cs" />
     <Compile Include="Builders\Builder_Compile.cs" />
     <Compile Include="Builders\Builder_Global.cs" />

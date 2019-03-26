@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SALO_Core.AST.Logic
 {
-    public class AST_If : AST_Logic
+    public class AST_While : AST_Logic
     {
         public AST_Expression inside { get; protected set; }
         public override void Parse(string input, int charIndex)
@@ -16,48 +16,48 @@ namespace SALO_Core.AST.Logic
             input = input.Trim();
             if (string.IsNullOrWhiteSpace(input))
                 throw new AST_EmptyInputException("Provided string is empty", charIndex);
-            if (!input.StartsWith("if") || !input.EndsWith("ends if"))
-                throw new AST_EmptyInputException("Provided string is not an if code piece", charIndex);
+            if (!input.StartsWith("while") || !input.EndsWith("ends while"))
+                throw new AST_EmptyInputException("Provided string is not a while code piece", charIndex);
 
-            int insideIndexStart = "if".Length;
-            while(AST_Program.separator_ast.IndexOf(input[insideIndexStart]) != -1)
+            int insideIndexStart = "while".Length;
+            while (AST_Program.separator_ast.IndexOf(input[insideIndexStart]) != -1)
             {
                 //We are skipping white-spaces
                 ++insideIndexStart;
             }
-            if(input[insideIndexStart] != '(')
+            if (input[insideIndexStart] != '(')
             {
-                throw new ASS_Exception("Failed to find conditional expression inside if", charIndex + insideIndexStart);
+                throw new ASS_Exception("Failed to find conditional expression inside while", charIndex + insideIndexStart);
             }
 
             Stack<string> brackets = new Stack<string>();
             int insideIndexEnd = insideIndexStart + 1;
             brackets.Push("(");
-            while(brackets.Count > 0)
+            while (brackets.Count > 0)
             {
-                if(input[insideIndexEnd] == '(')
+                if (input[insideIndexEnd] == '(')
                 {
                     brackets.Push("(");
                     insideIndexEnd++;
                 }
                 else if (input[insideIndexEnd] == ')')
                 {
-                    if(brackets.Peek() == "(")
+                    if (brackets.Peek() == "(")
                     {
                         brackets.Pop();
                         insideIndexEnd++;
                     }
                     else
                     {
-                        throw new ASS_Exception("Failed to parse conditional expression inside if",
-                            new ASS_Exception("Encountered unexpected tokens in bracket stack", 
+                        throw new ASS_Exception("Failed to parse conditional expression inside while",
+                            new ASS_Exception("Encountered unexpected tokens in bracket stack",
                             charIndex + insideIndexEnd), charIndex + insideIndexEnd);
                     }
                 }
                 else insideIndexEnd++;
                 if (input.Length <= insideIndexEnd)
                 {
-                    throw new ASS_Exception("Reached end of input while parsing if brackets",
+                    throw new ASS_Exception("Reached end of input while parsing while brackets",
                         charIndex + insideIndexEnd);
                 }
             }
@@ -69,7 +69,7 @@ namespace SALO_Core.AST.Logic
             {
                 localInput++;
             }
-            if(input.IndexOf("does", localInput) != localInput)
+            if (input.IndexOf("does", localInput) != localInput)
             {
                 //We failed to find if body
                 throw new ASS_Exception("Conditional statement body was not found", charIndex + localInput);
@@ -78,17 +78,17 @@ namespace SALO_Core.AST.Logic
             codeSegments.Push("does");
             int codeSegmentStart = localInput;
             localInput++;
-            while(codeSegments.Count > 0)
+            while (codeSegments.Count > 0)
             {
-                if(input.IndexOf("does", localInput) == localInput)
+                if (input.IndexOf("does", localInput) == localInput)
                 {
                     codeSegments.Push("does");
                 }
                 else if (input.IndexOf("ends", localInput) == localInput)
                 {
-                    if(codeSegments.Peek() != "does")
+                    if (codeSegments.Peek() != "does")
                     {
-                        throw new ASS_Exception("Failed to parse conditional expression inside if",
+                        throw new ASS_Exception("Failed to parse conditional expression inside while",
                             new ASS_Exception("Encountered unexpected tokens in bracket stack",
                             charIndex + localInput), charIndex + localInput);
                     }
@@ -97,7 +97,7 @@ namespace SALO_Core.AST.Logic
                 localInput++;
                 if (input.Length <= localInput && codeSegments.Count > 0)
                 {
-                    throw new ASS_Exception("Reached end of input while parsing if body",
+                    throw new ASS_Exception("Reached end of input while parsing while body",
                         charIndex + localInput);
                 }
             }
@@ -188,9 +188,9 @@ namespace SALO_Core.AST.Logic
                 output += "|-";
                 indent += "| ";
             }
-            output += "If:\r\n";
+            output += "While:\r\n";
 
-            if(inside != null)
+            if (inside != null)
             {
                 output += indent + "Condition:\r\n";
                 inside.Print(indent, childNodes == null, ref output);
@@ -213,7 +213,7 @@ namespace SALO_Core.AST.Logic
             }
         }
 
-        public AST_If(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
+        public AST_While(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
         {
 
         }

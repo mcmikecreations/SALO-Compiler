@@ -8,68 +8,80 @@ using System.Threading.Tasks;
 
 namespace SALO_Core.AST.Logic
 {
-    public class AST_If : AST_Logic
+    public class AST_For : AST_Logic
     {
-        public AST_Expression inside { get; protected set; }
+        public AST_Expression initializer { get; protected set; }
+        public AST_Expression condition { get; protected set; }
+        public AST_Expression loop { get; protected set; }
         public override void Parse(string input, int charIndex)
         {
             input = input.Trim();
             if (string.IsNullOrWhiteSpace(input))
                 throw new AST_EmptyInputException("Provided string is empty", charIndex);
-            if (!input.StartsWith("if") || !input.EndsWith("ends if"))
-                throw new AST_EmptyInputException("Provided string is not an if code piece", charIndex);
+            if (!input.StartsWith("for") || !input.EndsWith("ends for"))
+                throw new AST_EmptyInputException("Provided string is not a for code piece", charIndex);
 
-            int insideIndexStart = "if".Length;
-            while(AST_Program.separator_ast.IndexOf(input[insideIndexStart]) != -1)
+            int insideIndexStart = "for".Length;
+            while (AST_Program.separator_ast.IndexOf(input[insideIndexStart]) != -1)
             {
                 //We are skipping white-spaces
                 ++insideIndexStart;
             }
-            if(input[insideIndexStart] != '(')
+            if (input[insideIndexStart] != '(')
             {
-                throw new ASS_Exception("Failed to find conditional expression inside if", charIndex + insideIndexStart);
+                throw new ASS_Exception("Failed to find conditional expression inside for", charIndex + insideIndexStart);
             }
 
             Stack<string> brackets = new Stack<string>();
             int insideIndexEnd = insideIndexStart + 1;
             brackets.Push("(");
-            while(brackets.Count > 0)
+            while (brackets.Count > 0)
             {
-                if(input[insideIndexEnd] == '(')
+                if (input[insideIndexEnd] == '(')
                 {
                     brackets.Push("(");
                     insideIndexEnd++;
                 }
                 else if (input[insideIndexEnd] == ')')
                 {
-                    if(brackets.Peek() == "(")
+                    if (brackets.Peek() == "(")
                     {
                         brackets.Pop();
                         insideIndexEnd++;
                     }
                     else
                     {
-                        throw new ASS_Exception("Failed to parse conditional expression inside if",
-                            new ASS_Exception("Encountered unexpected tokens in bracket stack", 
+                        throw new ASS_Exception("Failed to parse conditional expression inside for",
+                            new ASS_Exception("Encountered unexpected tokens in bracket stack",
                             charIndex + insideIndexEnd), charIndex + insideIndexEnd);
                     }
                 }
                 else insideIndexEnd++;
                 if (input.Length <= insideIndexEnd)
                 {
-                    throw new ASS_Exception("Reached end of input while parsing if brackets",
+                    throw new ASS_Exception("Reached end of input while parsing for brackets",
                         charIndex + insideIndexEnd);
                 }
             }
             //insideIndexEnd points at closing bracket + 1
             string conditionalExpression = input.Substring(insideIndexStart + 1, insideIndexEnd - insideIndexStart - 2);
-            inside = new AST_Expression(this, conditionalExpression + " ₴", charIndex + insideIndexStart + 1);
+            string[] insideExpressions = conditionalExpression.Split('₴');
+            if (insideExpressions.Length != 3)
+                throw new AST_BadFormatException(
+                    "Conditional expression inside a for statement should have exactly 3 sub-expressions",
+                    insideIndexStart + 1);
+            if(!string.IsNullOrWhiteSpace(insideExpressions[0]))
+                initializer = new AST_Expression(this, insideExpressions[0] + " ₴", charIndex + insideIndexStart + 1);
+            if (!string.IsNullOrWhiteSpace(insideExpressions[1]))
+                condition = new AST_Expression(this, insideExpressions[1] + " ₴", charIndex + insideIndexStart + 1 + insideExpressions[0].Length);
+            if (!string.IsNullOrWhiteSpace(insideExpressions[2]))
+                loop = new AST_Expression(this, insideExpressions[2] + " ₴", charIndex + insideIndexStart + 1 + insideExpressions[0].Length + insideExpressions[1].Length);
             int localInput = insideIndexEnd;
             while (AST_Program.separator_ast.IndexOf(input[localInput]) != -1)
             {
                 localInput++;
             }
-            if(input.IndexOf("does", localInput) != localInput)
+            if (input.IndexOf("does", localInput) != localInput)
             {
                 //We failed to find if body
                 throw new ASS_Exception("Conditional statement body was not found", charIndex + localInput);
@@ -78,17 +90,17 @@ namespace SALO_Core.AST.Logic
             codeSegments.Push("does");
             int codeSegmentStart = localInput;
             localInput++;
-            while(codeSegments.Count > 0)
+            while (codeSegments.Count > 0)
             {
-                if(input.IndexOf("does", localInput) == localInput)
+                if (input.IndexOf("does", localInput) == localInput)
                 {
                     codeSegments.Push("does");
                 }
                 else if (input.IndexOf("ends", localInput) == localInput)
                 {
-                    if(codeSegments.Peek() != "does")
+                    if (codeSegments.Peek() != "does")
                     {
-                        throw new ASS_Exception("Failed to parse conditional expression inside if",
+                        throw new ASS_Exception("Failed to parse conditional expression inside for",
                             new ASS_Exception("Encountered unexpected tokens in bracket stack",
                             charIndex + localInput), charIndex + localInput);
                     }
@@ -97,7 +109,7 @@ namespace SALO_Core.AST.Logic
                 localInput++;
                 if (input.Length <= localInput && codeSegments.Count > 0)
                 {
-                    throw new ASS_Exception("Reached end of input while parsing if body",
+                    throw new ASS_Exception("Reached end of input while parsing for body",
                         charIndex + localInput);
                 }
             }
@@ -188,12 +200,24 @@ namespace SALO_Core.AST.Logic
                 output += "|-";
                 indent += "| ";
             }
-            output += "If:\r\n";
+            output += "For:\r\n";
 
-            if(inside != null)
+            if (initializer != null)
+            {
+                output += indent + "Initializer:\r\n";
+                initializer.Print(indent, childNodes == null, ref output);
+                output += indent + "\r\n";
+            }
+            if (condition != null)
             {
                 output += indent + "Condition:\r\n";
-                inside.Print(indent, childNodes == null, ref output);
+                condition.Print(indent, childNodes == null, ref output);
+                output += indent + "\r\n";
+            }
+            if (loop != null)
+            {
+                output += indent + "Loop:\r\n";
+                loop.Print(indent, childNodes == null, ref output);
                 output += indent + "\r\n";
             }
             if (expressions != null)
@@ -213,7 +237,7 @@ namespace SALO_Core.AST.Logic
             }
         }
 
-        public AST_If(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
+        public AST_For(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)
         {
 
         }
