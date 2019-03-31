@@ -13,6 +13,7 @@ namespace SALO_Core.AST
 		none,
 		define,
 		include,
+        @if,
 	}
 	public class AST_Directive : AST_Node
 	{
@@ -30,9 +31,9 @@ namespace SALO_Core.AST
 			{
 				directive_Type = AST_Directive_Type.include;
 			}
-			else
+            else
 			{
-				throw new AST_WrongDirectiveException(input + " is not a valid define directive", charIndex);
+				throw new AST_WrongDirectiveException(input + " is not a valid directive", charIndex);
 			}
 			//TODO - change static string defines with a constant
 			switch (directive_Type)

@@ -11,11 +11,31 @@ namespace SALO_Core.CodeBlocks.Expressions
 {
     public class Exp_Node
     {
+        public void SetLeft(Exp_Node value)
+        {
+            left = value;
+        }
         public Exp_Node left { get; protected set; }
+        public void SetRight(Exp_Node value)
+        {
+            right = value;
+        }
         public Exp_Node right { get; protected set; }
         public List<string> input { get; protected set; }
+        public void SetData(string value)
+        {
+            exp_Data = value;
+        }
         public string exp_Data { get; protected set; } = null;
+        public void SetType(Exp_Type value)
+        {
+            exp_Type = value;
+        }
         public Exp_Type exp_Type { get; protected set; } = Exp_Type.None;
+        public void SetOperator(AST_Operator value)
+        {
+            exp_Operator = value;
+        }
         public AST_Operator exp_Operator { get; protected set; }
         public Exp_Node()
         {
@@ -103,7 +123,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 else
                                 {
                                     throw new AST_BadFormatException(
-                                        input[i] + " is not a suffix operaiton", 
+                                        input[i] + " is not a suffix operaiton",
                                         charIndex);
                                 }
                             }
@@ -122,7 +142,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                                 else
                                 {
                                     throw new AST_BadFormatException(
-                                        input[i] + " is not an infix operaiton", 
+                                        input[i] + " is not an infix operaiton",
                                         charIndex);
                                 }
                             }

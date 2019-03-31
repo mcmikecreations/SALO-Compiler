@@ -69,6 +69,7 @@
     <Compile Include="Builders\Builder_Locales.cs" />
     <Compile Include="Builders\Builder_Preprocessor.cs" />
     <Compile Include="Builders\Builder_Translation.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\ParameterType.cs" />
     <Compile Include="CodeBlocks\ASS\CB_Assembler.cs" />
     <Compile Include="CodeBlocks\ASS\CB_Assembler_New.cs" />
     <Compile Include="CodeBlocks\CB.cs" />
@@ -76,6 +77,10 @@
     <Compile Include="CodeBlocks\Expressions\Exp_Node.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp_Node_New.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp_Type.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\PT_Int32.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\PT_Lpcstr.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\PT_None.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\PT_Void.cs" />
     <Compile Include="Exceptions\ASS\ASS_Exception.cs" />
     <Compile Include="Exceptions\ASS\ASS_WrongNodeException.cs" />
     <Compile Include="Exceptions\AST_BadFormatException.cs" />

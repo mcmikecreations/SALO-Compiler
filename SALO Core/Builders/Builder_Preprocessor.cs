@@ -52,7 +52,8 @@ namespace SALO_Core.Builders
             outText = IncludeCode(outText, mainFilePath);
             //Perform macros
             bool processed = true;
-            while (processed) outText = ProcessFile(outText, out processed);
+            while (processed)
+                outText = ProcessFile(outText, out processed);
 
             OutputText = outText;
         }
@@ -72,7 +73,7 @@ namespace SALO_Core.Builders
 
             //Remove single-line comments
             int singleLine = input.IndexOf("//");
-            while(singleLine != -1)
+            while (singleLine != -1)
             {
                 int singleLineEnd = input.IndexOf("\n", singleLine);
                 if (singleLineEnd == -1) singleLineEnd = input.Length - 1;
@@ -129,8 +130,8 @@ namespace SALO_Core.Builders
         private string ProcessFile(string input, out bool processed)
         {
             processed = false;
-            int pos = input.IndexOf("#define");
-            int definePosStart = pos, definePosEnd = pos;
+            int pos = input.IndexOf("#");
+            int directivePosStart = pos, directivePosEnd = pos;
             if (pos != -1)
             {
                 //We have a preprocessor directive
@@ -192,7 +193,7 @@ namespace SALO_Core.Builders
                     //{
                     //    defineValue = (name);
                     //}
-                    definePosEnd = defineEnd;
+                    directivePosEnd = defineEnd;
                     pos = defineEnd;
                     if (!string.IsNullOrWhiteSpace(value))
                     {
@@ -225,20 +226,20 @@ namespace SALO_Core.Builders
                         while (pos < undefPos)
                         {
                             int defineReplacePos = input.IndexOf(name, pos);
-                            if (defineReplacePos == -1 || defineReplacePos >= undefPosStart) break;
+                            if (defineReplacePos == -1 || (undefPosStart != -1 && defineReplacePos >= undefPosStart)) break;
                             else
                             {
-                                if (!char.IsLetterOrDigit(input[defineReplacePos-1]) &&
+                                if (!char.IsLetterOrDigit(input[defineReplacePos - 1]) &&
                                     !char.IsLetterOrDigit(input[defineReplacePos + name.Length]))
                                 {
                                     //We have to replace
                                     input = input.Remove(defineReplacePos, name.Length);
                                     input = input.Insert(defineReplacePos, value);
-                                    undefPosStart += value.Length - name.Length;
+                                    if (undefPosStart != -1)
+                                        undefPosStart += value.Length - name.Length;
                                     undefPosEnd += value.Length - name.Length;
-                                    
+
                                     pos = defineReplacePos + value.Length;
-                                    processed = true;
                                 }
                                 else
                                 {
@@ -246,13 +247,82 @@ namespace SALO_Core.Builders
                                 }
                             }
                         }
-                        input = input.Remove(undefPosStart, undefPosEnd - undefPosStart);
-                        input = input.Remove(definePosStart, definePosEnd - definePosStart + 1);
+                        if (undefPosStart != -1)
+                        {
+                            input = input.Remove(undefPosStart, undefPosEnd - undefPosStart);
+                        }
+                        input = input.Remove(directivePosStart, directivePosEnd - directivePosStart + 1);
+                        processed = true;
                     }
                     else
                     {
                         //We have a define with no value
                     }
+                }
+                else if (input.IndexOf("if ", pos + 1) == pos + 1)
+                {
+                    int ifStart = pos + 1 + "if ".Length;
+                    int ifEnd = input.IndexOf("\n", ifStart);
+                    if (ifEnd == -1) ifEnd = input.Length - 1;
+                    if (input[ifEnd] == '\r') ifEnd--;
+
+                    bool shouldInclude = true;
+                    AST.AST_Expression ast_expression = new AST.AST_Expression(
+                        null,
+                        input.Substring(ifStart, ifEnd - ifStart + 1) + " ₴",
+                        ifStart);
+                    CodeBlocks.Expressions.Exp_Statement exp_statement = new CodeBlocks.Expressions.Exp_Statement(
+                        ast_expression.nodes);
+                    if (exp_statement.head.left != null || exp_statement.head.right != null)
+                    {
+                        shouldInclude = false;
+                    }
+                    else if (exp_statement.head.exp_Type != CodeBlocks.Expressions.Exp_Type.Constant)
+                    {
+                        shouldInclude = false;
+                    }
+                    else if (int.Parse(exp_statement.head.exp_Data) == 0)
+                    {
+                        shouldInclude = false;
+                    }
+
+                    int ifCount = 1;
+                    int ifPos = ifEnd;
+                    while (ifCount != 0)
+                    {
+                        if (input.IndexOf("#if", ifPos) == ifPos)
+                        {
+                            ifCount++;
+                            ifPos += "#if".Length;
+                        }
+                        else if (input.IndexOf("#endif", ifPos) == ifPos)
+                        {
+                            ifCount--;
+                            if (ifCount == 0) break;
+                            ifPos += "#endif".Length;
+                        }
+                        else
+                        {
+                            ifPos++;
+                        }
+                        if (ifPos >= input.Length)
+                        {
+                            if (ifCount == 0) break;
+                            throw new AST_BadFormatException("No end found for preprocessor if", ifStart);
+                        }
+                    }
+                    if (shouldInclude)
+                    {
+                        int endifLength = input.IndexOf("\n", ifPos) - ifPos + 1;
+                        input = input.Remove(ifPos, endifLength);
+                        input = input.Remove(pos, ifEnd - pos + 1);
+                    }
+                    else
+                    {
+                        input = input.Remove(pos, ifPos - pos + 1);
+                    }
+                    pos = ifPos;
+                    processed = true;
                 }
                 else
                 {

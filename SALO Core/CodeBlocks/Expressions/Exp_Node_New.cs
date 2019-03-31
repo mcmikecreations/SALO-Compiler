@@ -17,6 +17,10 @@ namespace SALO_Core.CodeBlocks.Expressions
             public Exp_Node inNode;
             public int indexStart, indexEnd;
             public bool isString;
+            public override string ToString()
+            {
+                return isString ? inStrg : inNode.exp_Type.ToString();
+            }
         }
         public Exp_Node_New(Exp_Node_New left, Exp_Node_New right,
                             List<string> input,
@@ -226,7 +230,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                             }
                             input.RemoveRange(opIndexes[op], i - opIndexes[op]);
                             Exp_Node_New bracketsNode = new Exp_Node_New(content, opIndexes[op] + 1)
-                            { exp_Operator = ops[op] };
+                            /*{ exp_Operator = ops[op] }*/;
                             Exp_Piece bracketsPiece;
                             if (opIndexes[op] - 1 >= 0 &&
                                 input[opIndexes[op] - 1].isString &&

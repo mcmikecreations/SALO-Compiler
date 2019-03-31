@@ -653,6 +653,7 @@ namespace SALO_Core.CodeBlocks
             }
             public void SetFreeAddress(Variable oldVariable)
             {
+                if (oldVariable == null) return;
                 if (oldVariable.address.length == -1)
                 {
                     if (oldVariable.address.address == "eax")
@@ -892,7 +893,8 @@ namespace SALO_Core.CodeBlocks
                     exp.Print("", false, ref output);
                     Console.WriteLine(output);
 #endif
-                    if (IsOperatorLogic(exp.head.exp_Operator))
+                    if ((exp.head.exp_Type == Exp_Type.Operator && IsOperatorLogic(exp.head.exp_Operator))
+                        || exp.head.exp_Type == Exp_Type.Constant)
                     {
                         //Create a label to get out of scope
                         string restLabel = ".L" + (localLabels++).ToString();
@@ -1234,6 +1236,14 @@ namespace SALO_Core.CodeBlocks
                     }
                     else throw new NotImplementedException(input.exp_Data + " is not supported");
                 }
+                else if (input.exp_Type == Exp_Type.Constant)
+                {
+                    if(ParameterType.Parse(input.exp_Data, (dynamic)Exp_Statement.GetDataType(input)) == 0)
+                    {
+                        result += "\t  jmp\t" + endLabel + AST_Program.separator_line;
+                    }
+                    res = null;
+                }
                 else throw new NotImplementedException(input.exp_Data + " is not yet supported");
 
                 resString = result;
@@ -1572,13 +1582,13 @@ namespace SALO_Core.CodeBlocks
                 }
                 else if (input.exp_Type == Exp_Type.Constant)
                 {
-                    if (GetDataType(input).GetName() == "lpcstr")
+                    if (Exp_Statement.GetDataType(input).GetName() == "lpcstr")
                     {
                         res = parent.sec3.DeclareString(input.exp_Data);
                     }
                     else
                     {
-                        res = new Variable(null, GetDataType(input), new Address(input.exp_Data, -2));
+                        res = new Variable(null, Exp_Statement.GetDataType(input), new Address(input.exp_Data, -2));
                     }
                 }
                 else if (input.exp_Type == Exp_Type.Variable)
@@ -1810,42 +1820,6 @@ namespace SALO_Core.CodeBlocks
                 SALO_Core.Tools.ClassExtensions.AppendRange(res, ToParameterList(exp, head.right, out resString));
                 result = resString;
                 return res;
-            }
-            static IParameterType GetDataType(Exp_Node node)
-            {
-                if (node.exp_Type != Exp_Type.Constant) return ParameterType.GetParameterType("none");
-                else if (!Exp_Node.isConstant(node.exp_Data))
-                {
-                    return ParameterType.GetParameterType("none");
-                }
-                else
-                {
-                    if (node.exp_Data[0] == '\"' && node.exp_Data[node.exp_Data.Length - 1] == '\"')
-                    {
-                        return ParameterType.GetParameterType("lpcstr");
-                    }
-                    Int32 valInt32 = 0;
-                    if (Int32.TryParse(node.exp_Data, out valInt32))
-                    {
-                        return ParameterType.GetParameterType("int32");
-                    }
-                    Int16 valInt16 = 0;
-                    if (Int16.TryParse(node.exp_Data, out valInt16))
-                    {
-                        return ParameterType.GetParameterType("int16");
-                    }
-                    byte valInt8 = 0;
-                    if (byte.TryParse(node.exp_Data, out valInt8))
-                    {
-                        return ParameterType.GetParameterType("int8");
-                    }
-                    bool valBool = false;
-                    if (bool.TryParse(node.exp_Data, out valBool))
-                    {
-                        return ParameterType.GetParameterType("bool");
-                    }
-                    throw new NotImplementedException(node.exp_Data + " is not yet recognized");
-                }
             }
         }
         public override void Parse(AST_Function input)
