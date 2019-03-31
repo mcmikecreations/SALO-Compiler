@@ -78,6 +78,7 @@
     <Compile Include="CodeBlocks\Expressions\Exp_Node_New.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp_Type.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Int32.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\PT_Int8.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Lpcstr.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_None.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Void.cs" />

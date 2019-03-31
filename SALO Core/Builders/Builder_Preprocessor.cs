@@ -288,6 +288,7 @@ namespace SALO_Core.Builders
 
                     int ifCount = 1;
                     int ifPos = ifEnd;
+                    int elsePos = -1, elseCount = 0;
                     while (ifCount != 0)
                     {
                         if (input.IndexOf("#if", ifPos) == ifPos)
@@ -301,6 +302,15 @@ namespace SALO_Core.Builders
                             if (ifCount == 0) break;
                             ifPos += "#endif".Length;
                         }
+                        else if (input.IndexOf("#else", ifPos) == ifPos)
+                        {
+                            elseCount++;
+                            if (elseCount > 1)
+                                throw new AST_BadFormatException(
+                                    "Can\'t have more than one preprocessor else inside preprocessor if", ifPos);
+                            elsePos = ifPos;
+                            ifPos += "#else".Length;
+                        }
                         else
                         {
                             ifPos++;
@@ -311,15 +321,35 @@ namespace SALO_Core.Builders
                             throw new AST_BadFormatException("No end found for preprocessor if", ifStart);
                         }
                     }
+                    int endifIndex = input.IndexOf("\n", ifPos);
+                    if (endifIndex == -1) endifIndex = input.Length - 1;
                     if (shouldInclude)
                     {
-                        int endifLength = input.IndexOf("\n", ifPos) - ifPos + 1;
-                        input = input.Remove(ifPos, endifLength);
-                        input = input.Remove(pos, ifEnd - pos + 1);
+                        if(elsePos == -1)
+                        {
+                            int endifLength = endifIndex - ifPos + 1;
+                            input = input.Remove(ifPos, endifLength);
+                            input = input.Remove(pos, ifEnd - pos + 1);
+                        }
+                        else
+                        {
+                            int endifLength = endifIndex - elsePos + 1;
+                            input = input.Remove(elsePos, endifLength);
+                            input = input.Remove(pos, ifEnd - pos + 1);
+                        }
                     }
                     else
                     {
-                        input = input.Remove(pos, ifPos - pos + 1);
+                        if(elsePos == -1)
+                        {
+                            input = input.Remove(pos, ifPos - pos + 1);
+                        }
+                        else
+                        {
+                            int endifLength = endifIndex - ifPos + 1;
+                            input = input.Remove(ifPos, endifLength);
+                            input = input.Remove(pos, input.IndexOf("\n", elsePos) - pos + 1);
+                        }
                     }
                     pos = ifPos;
                     processed = true;
