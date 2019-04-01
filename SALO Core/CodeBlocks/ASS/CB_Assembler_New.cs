@@ -225,6 +225,11 @@ namespace SALO_Core.CodeBlocks
                 Variable v = new Variable(new AST_Variable(null, "lpcstr", parsedInput),
                     ParameterType.GetParameterType("lpcstr"),
                     new Address("lpcstr" + values.Count.ToString(), -3));
+                Variable found = values.Find(a =>
+                    a.dataType.Equals(v.dataType) &&
+                    a.address.length == v.address.length &&
+                    a.ast_variable.Data == v.ast_variable.Data);
+                if (found != null) return found;
                 values.Add(v);
                 return v;
             }

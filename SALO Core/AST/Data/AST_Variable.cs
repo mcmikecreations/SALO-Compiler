@@ -20,7 +20,7 @@ namespace SALO_Core.AST.Data
 			{
 				if (!(vars.Length == 1 && vars[0] == "void"))
 					throw new AST_BadFormatException("Input parameter was given in a wrong format: " + input,
-								new FormatException("Parameter format is <type> <name>₴"), charIndex);
+								new FormatException("Parameter format is <type> <name>;"), charIndex);
 			}
             //TODO - allow custom types, created by user
             try

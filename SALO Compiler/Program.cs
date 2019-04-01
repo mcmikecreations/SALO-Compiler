@@ -69,7 +69,7 @@ namespace SALO_Compiler
 					(args.Length > 2 && args[2] == "--eng") || 
 					(args.Length > 3 && args[3] == "--eng"))
 				{
-					File.WriteAllText(fileName + "_translated.txt", builder_Global.Translator.Translated);
+					File.WriteAllText(fileName + "_translated.txt", builder_Global.Preprocessor.OutputText);
 				}
 				if ((args.Length > 1 && args[1] == "--ast") || 
 					(args.Length > 2 && args[2] == "--ast") || 

@@ -269,7 +269,7 @@ namespace SALO_Core.Builders
                     bool shouldInclude = true;
                     AST.AST_Expression ast_expression = new AST.AST_Expression(
                         null,
-                        input.Substring(ifStart, ifEnd - ifStart + 1) + " ₴",
+                        input.Substring(ifStart, ifEnd - ifStart + 1) + " ;",
                         ifStart);
                     CodeBlocks.Expressions.Exp_Statement exp_statement = new CodeBlocks.Expressions.Exp_Statement(
                         ast_expression.nodes);

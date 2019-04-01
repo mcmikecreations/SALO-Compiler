@@ -63,7 +63,7 @@ namespace SALO_Core.AST.Logic
             }
             //insideIndexEnd points at closing bracket + 1
             string conditionalExpression = input.Substring(insideIndexStart + 1, insideIndexEnd - insideIndexStart - 2);
-            inside = new AST_Expression(this, conditionalExpression + " ₴", charIndex + insideIndexStart + 1);
+            inside = new AST_Expression(this, conditionalExpression + " ;", charIndex + insideIndexStart + 1);
             int localInput = insideIndexEnd;
             while (AST_Program.separator_ast.IndexOf(input[localInput]) != -1)
             {
@@ -167,7 +167,7 @@ namespace SALO_Core.AST.Logic
                         if (!isVariable)
                         {
                             //Parse as an expression
-                            expressions.AddLast(new AST_Expression(this, ex + "₴", charIndex + exLength));
+                            expressions.AddLast(new AST_Expression(this, ex + ";", charIndex + exLength));
                         }
                     }
                 }

@@ -18,7 +18,7 @@ namespace SALO_Core.AST.Data
 			if (var.Length != 1)
 			{
 				throw new AST_BadFormatException("Return value was given in a wrong format: " + input,
-							new FormatException("Return value format is <type>₴"), charIndex);
+							new FormatException("Return value format is <type>;"), charIndex);
 			}
             //TODO - allow custom types, created by user
             try

@@ -63,16 +63,16 @@ namespace SALO_Core.CodeBlocks
             code += "takes" + AST_Program.separator_line;
             if (parameters.Count == 0)
             {
-                code += "void ₴" + AST_Program.separator_line;
+                code += "void ;" + AST_Program.separator_line;
             }
             foreach (var inp in parameters)
             {
-                code += inp.type.GetName() + " " + inp.name + " ₴" + AST_Program.separator_line;
+                code += inp.type.GetName() + " " + inp.name + " ;" + AST_Program.separator_line;
             }
             code += "ends" + AST_Program.separator_line;
 
             code += "gives" + AST_Program.separator_line;
-            code += retVal.GetName() + " ₴" + AST_Program.separator_line;
+            code += retVal.GetName() + " ;" + AST_Program.separator_line;
             code += "ends" + AST_Program.separator_line;
 
             code += "does" + AST_Program.separator_line;

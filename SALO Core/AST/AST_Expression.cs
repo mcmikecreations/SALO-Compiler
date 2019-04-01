@@ -85,8 +85,8 @@ namespace SALO_Core.AST
 		public override void Parse(string input, int charIndex)
 		{
 			if (string.IsNullOrWhiteSpace(input)) throw new AST_EmptyInputException("Provided string is empty", charIndex);
-			if (!input.EndsWith("₴"))
-				throw new AST_BadFormatException("Provided string is not ₴ terminated", charIndex + input.Length - 1);
+			if (!input.EndsWith(";"))
+				throw new AST_BadFormatException("Provided string is not ; terminated", charIndex + input.Length - 1);
 			LinkedList<string> items = new LinkedList<string>();
 			int i = 0;
 			while (i < input.Length)
@@ -182,7 +182,7 @@ namespace SALO_Core.AST
 					}
 					if (!isOper)
 					{
-						if (input[i] == '₴')
+						if (input[i] == ';')
 						{
 							items.AddLast(input[i].ToString());
 							++i;

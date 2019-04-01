@@ -10,8 +10,8 @@ namespace SALO_Core.AST
 {
 	public class AST_Program : AST_Node
 	{
-		public static readonly string separator_ast = "₴ \r\n\t";
-		public static readonly string separator_ast_nospace = "₴\r\n\t";
+		public static readonly string separator_ast = "; \r\n\t";
+		public static readonly string separator_ast_nospace = ";\r\n\t";
 		public static readonly string separator_ast_nosemicolon = " \r\n\t";
 		public static readonly string separator_line = "\r\n";
 		public override void Parse(string input, int charIndex)
@@ -141,7 +141,7 @@ namespace SALO_Core.AST
 						//TODO - do checks for variables
 					}
 
-					int expInd = input.IndexOf('₴', i);
+					int expInd = input.IndexOf(';', i);
 					if (expInd != -1)
 					{
 						string val = input.Substring(i, expInd - i + 1);

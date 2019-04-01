@@ -210,7 +210,7 @@ namespace SALO_Core.AST
                 }
                 i += "does".Length;
                 string inputcode = input.Substring(i, end - i);
-                string[] exps = Split(inputcode, charIndex);//inputcode.Split(new char[] { '₴' }/*, StringSplitOptions.RemoveEmptyEntries*/);
+                string[] exps = Split(inputcode, charIndex);//inputcode.Split(new char[] { ';' }/*, StringSplitOptions.RemoveEmptyEntries*/);
                 if (exps.Length > 0)
                 {
                     expressions = new LinkedList<AST_Expression>();
@@ -272,7 +272,7 @@ namespace SALO_Core.AST
                             if (!isVariable)
                             {
                                 //Parse as an expression
-                                expressions.AddLast(new AST_Expression(this, ex + "₴", charIndex + exLength));
+                                expressions.AddLast(new AST_Expression(this, ex + ";", charIndex + exLength));
                             }
                         }
                     }
@@ -313,7 +313,7 @@ namespace SALO_Core.AST
                     }
                     endIndex += "native".Length;
                     while (AST_Program.separator_ast_nosemicolon.IndexOf(input[endIndex]) != -1) endIndex++;
-                    if(input.IndexOf("₴", endIndex) != endIndex)
+                    if(input.IndexOf(";", endIndex) != endIndex)
                     {
                         throw new AST_BadFormatException("Bad formatting of native code end", charIndex + endIndex);
                     }
@@ -408,7 +408,7 @@ namespace SALO_Core.AST
                     insideIndexEnd += "if".Length;
 
                     while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
-                    if (input.IndexOf("₴", insideIndexEnd) != insideIndexEnd)
+                    if (input.IndexOf(";", insideIndexEnd) != insideIndexEnd)
                     {
                         throw new AST_BadFormatException("Semicolon not found at the end of an if block", charIndex + insideIndexEnd);
                     }
@@ -503,7 +503,7 @@ namespace SALO_Core.AST
                     insideIndexEnd += "while".Length;
 
                     while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
-                    if (input.IndexOf("₴", insideIndexEnd) != insideIndexEnd)
+                    if (input.IndexOf(";", insideIndexEnd) != insideIndexEnd)
                     {
                         throw new AST_BadFormatException("Semicolon not found at the end of an while block", charIndex + insideIndexEnd);
                     }
@@ -598,7 +598,7 @@ namespace SALO_Core.AST
                     insideIndexEnd += "for".Length;
 
                     while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
-                    if (input.IndexOf("₴", insideIndexEnd) != insideIndexEnd)
+                    if (input.IndexOf(";", insideIndexEnd) != insideIndexEnd)
                     {
                         throw new AST_BadFormatException("Semicolon not found at the end of a for block", charIndex + insideIndexEnd);
                     }
@@ -608,7 +608,7 @@ namespace SALO_Core.AST
                 }
                 else
                 {
-                    int semicolonIndex = input.IndexOf("₴", i);
+                    int semicolonIndex = input.IndexOf(";", i);
                     if (semicolonIndex == -1)
                         throw new AST_BadFormatException("Semicolon not found", charIndex + i);
                     expression = input.Substring(i, semicolonIndex - i);

@@ -65,17 +65,17 @@ namespace SALO_Core.AST.Logic
             }
             //insideIndexEnd points at closing bracket + 1
             string conditionalExpression = input.Substring(insideIndexStart + 1, insideIndexEnd - insideIndexStart - 2);
-            string[] insideExpressions = conditionalExpression.Split('₴');
+            string[] insideExpressions = conditionalExpression.Split(';');
             if (insideExpressions.Length != 3)
                 throw new AST_BadFormatException(
                     "Conditional expression inside a for statement should have exactly 3 sub-expressions",
                     insideIndexStart + 1);
             if(!string.IsNullOrWhiteSpace(insideExpressions[0]))
-                initializer = new AST_Expression(this, insideExpressions[0] + " ₴", charIndex + insideIndexStart + 1);
+                initializer = new AST_Expression(this, insideExpressions[0] + " ;", charIndex + insideIndexStart + 1);
             if (!string.IsNullOrWhiteSpace(insideExpressions[1]))
-                condition = new AST_Expression(this, insideExpressions[1] + " ₴", charIndex + insideIndexStart + 1 + insideExpressions[0].Length);
+                condition = new AST_Expression(this, insideExpressions[1] + " ;", charIndex + insideIndexStart + 1 + insideExpressions[0].Length);
             if (!string.IsNullOrWhiteSpace(insideExpressions[2]))
-                loop = new AST_Expression(this, insideExpressions[2] + " ₴", charIndex + insideIndexStart + 1 + insideExpressions[0].Length + insideExpressions[1].Length);
+                loop = new AST_Expression(this, insideExpressions[2] + " ;", charIndex + insideIndexStart + 1 + insideExpressions[0].Length + insideExpressions[1].Length);
             int localInput = insideIndexEnd;
             while (AST_Program.separator_ast.IndexOf(input[localInput]) != -1)
             {
@@ -179,7 +179,7 @@ namespace SALO_Core.AST.Logic
                         if (!isVariable)
                         {
                             //Parse as an expression
-                            expressions.AddLast(new AST_Expression(this, ex + "₴", charIndex + exLength));
+                            expressions.AddLast(new AST_Expression(this, ex + ";", charIndex + exLength));
                         }
                     }
                 }
