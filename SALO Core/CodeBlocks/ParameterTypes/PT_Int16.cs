@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SALO_Core.CodeBlocks
 {
-    public class PT_Int8 : IParameterType
+    class PT_Int16 : IParameterType
     {
         public bool Equals(IParameterType other)
         {
@@ -15,11 +15,11 @@ namespace SALO_Core.CodeBlocks
         }
         public int GetLengthInBytes()
         {
-            return 1;
+            return 2;
         }
         public string GetName()
         {
-            return "int8";
+            return "int16";
         }
     }
 }

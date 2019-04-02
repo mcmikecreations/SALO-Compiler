@@ -17,23 +17,28 @@ namespace SALO_Core.CodeBlocks
     {
         public static string ToDataTypeLabel(IParameterType parameterType)
         {
-            switch (parameterType.GetName())
+            if (parameterType is PT_Void || parameterType is PT_None)
             {
-                case "void":
-                case "none":
-                    throw new ASS_Exception("Error converting parameter type to an assembler label",
-                        new ASS_Exception("Empty parameter types can\'t be converted to an assembler label", -1), -1);
-                case "int32":
-                    return "dd";
-                case "int16":
-                    return "dw";
-                case "lpcstr":
-                case "int8":
-                    return "db";
-                default:
-                    throw new ASS_Exception("Error converting parameter type to an assembler label",
-                        new NotImplementedException(parameterType.GetName() +
-                            " can\'t be converted to an assembler label"), -1);
+                throw new ASS_Exception("Error converting parameter type to an assembler label",
+                    new ASS_Exception("Empty parameter types can\'t be converted to an assembler label", -1), -1);
+            }
+            else if (parameterType is PT_Int32)
+            {
+                return "dd";
+            }
+            else if (parameterType is PT_Int16)
+            {
+                return "dw";
+            }
+            else if (parameterType is PT_Int8 || parameterType is PT_Lpcstr)
+            {
+                return "db";
+            }
+            else
+            {
+                throw new ASS_Exception("Error converting parameter type to an assembler label",
+                    new NotImplementedException(parameterType.GetName() +
+                        " can\'t be converted to an assembler label"), -1);
             }
         }
         protected abstract class Section<T>
@@ -289,16 +294,25 @@ namespace SALO_Core.CodeBlocks
                     if (!t.used) continue;
                     if (t.functions.Count > 0)
                     {
-                        result += "import " + t.name + ",\\" + AST_Program.separator_line;
+
+                        CodeBlocks.Function lastUsed = null;
                         foreach (var function in t.functions)
                         {
-                            if (!function.used) continue;
-                            result += function.name + ",\'" + function.path + "\'";
-                            if (function != t.functions[t.functions.Count - 1])
+                            if (function.used) lastUsed = function;
+                        }
+                        if(lastUsed != null)
+                        {
+                            result += "import " + t.name + ",\\" + AST_Program.separator_line;
+                            foreach (var function in t.functions)
                             {
-                                result += ",\\";
+                                if (!function.used) continue;
+                                result += function.name + ",\'" + function.path + "\'";
+                                if (function != lastUsed)
+                                {
+                                    result += ",\\";
+                                }
+                                result += AST_Program.separator_line;
                             }
-                            result += AST_Program.separator_line;
                         }
                     }
                     result += AST_Program.separator_line;
@@ -484,9 +498,18 @@ namespace SALO_Core.CodeBlocks
                     case -1:
                         return address;
                     case 1:
+                        if (IsRegister())
+                        {
+                            //eax -> ax -> a -> al
+                            return address.Remove(0, 1).Remove(1) + "l";
+                        }
                         return "byte ptr " + address +  (offset < 0 ? "-" + (-offset).ToString() :
                             "+" + offset.ToString());
                     case 2:
+                        if (IsRegister())
+                        {
+                            return address.Remove(0, 1);
+                        }
                         return "word ptr " + address + (offset < 0 ? "-" + (-offset).ToString() :
                             "+" + offset.ToString());
                     default:
@@ -539,6 +562,17 @@ namespace SALO_Core.CodeBlocks
                 this.ast_variable = ast_variable;
                 this.dataType = dataType;
                 this.address = address;
+            }
+            public string ConvertToString()
+            {
+                if(address.length == -1 && address.IsRegister() && dataType.GetLengthInBytes() != 4)
+                {
+                    return address.GetPtr(dataType.GetLengthInBytes());
+                }
+                else
+                {
+                    return address.ConvertToString();
+                }
             }
         }
         public class MemoryManager
@@ -751,7 +785,7 @@ namespace SALO_Core.CodeBlocks
                 for (int i = ast_function.parameters.Count - 1; i >= 0; --i)
                 {
                     var p = ast_function.parameters.ElementAt(i);
-                    addr += p.DataType.GetLengthInBytes();
+                    addr += 4;// p.DataType.GetLengthInBytes();
                     this.parameters.Add(new Variable(p, p.DataType, new Address("ebp", p.DataType, addr)));
                 }
                 
@@ -786,11 +820,16 @@ namespace SALO_Core.CodeBlocks
                 {
                     result += "; " + t.ast_variable.Data +
                               " : " + t.ast_variable.DataType.GetName() +
-                              " as " + t.address.ConvertToString() +
+                              " as " + t.ConvertToString() +
                               AST_Program.separator_line;
                 }
                 result += name + ":" + AST_Program.separator_line;
                 string tempResult = "";
+
+                if(ast_function.expressions == null)
+                {
+                    throw new ASS_Exception("Function " + ast_function.name + " has no expressions", -1);
+                }
 
                 foreach (AST_Expression input in ast_function.expressions)
                 {
@@ -1174,8 +1213,8 @@ namespace SALO_Core.CodeBlocks
                         Variable leftTempVar = leftOutVar;
                         leftOutVar = memoryManager.GetFreeRegister(leftTempVar.dataType);
                         //memoryManager.UpdateRegisterUsage(leftOutVar);
-                        result += "\t  mov\t" + leftOutVar.address.ConvertToString() +
-                            ",\t" + leftTempVar.address.ConvertToString() + AST_Program.separator_line;
+                        result += "\t  mov\t" + leftOutVar.ConvertToString() +
+                            ",\t" + leftTempVar.ConvertToString() + AST_Program.separator_line;
                         memoryManager.SetFreeAddress(leftTempVar);
                     }
                     result += rightOutStr;
@@ -1187,8 +1226,8 @@ namespace SALO_Core.CodeBlocks
 
                     if (input.exp_Data == "==")
                     {
-                        result += "\t  cmp\t" + leftOutVar.address.ConvertToString() +
-                            ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                        result += "\t  cmp\t" + leftOutVar.ConvertToString() +
+                            ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                         //TODO - swap this to a bool variable? Then change memoryManager call in ParseLogic
                         res = leftOutVar;
                         memoryManager.SetFreeAddress(rightOutVar);
@@ -1196,8 +1235,8 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (input.exp_Data == "!=")
                     {
-                        result += "\t  cmp\t" + leftOutVar.address.ConvertToString() +
-                            ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                        result += "\t  cmp\t" + leftOutVar.ConvertToString() +
+                            ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                         //TODO - swap this to a bool variable? Then change memoryManager call in ParseLogic
                         res = leftOutVar;
                         memoryManager.SetFreeAddress(rightOutVar);
@@ -1205,8 +1244,8 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (input.exp_Data == ">")
                     {
-                        result += "\t  cmp\t" + leftOutVar.address.ConvertToString() +
-                            ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                        result += "\t  cmp\t" + leftOutVar.ConvertToString() +
+                            ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                         //TODO - swap this to a bool variable? Then change memoryManager call in ParseLogic
                         res = leftOutVar;
                         memoryManager.SetFreeAddress(rightOutVar);
@@ -1214,8 +1253,8 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (input.exp_Data == ">=")
                     {
-                        result += "\t  cmp\t" + leftOutVar.address.ConvertToString() +
-                            ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                        result += "\t  cmp\t" + leftOutVar.ConvertToString() +
+                            ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                         //TODO - swap this to a bool variable? Then change memoryManager call in ParseLogic
                         res = leftOutVar;
                         memoryManager.SetFreeAddress(rightOutVar);
@@ -1223,8 +1262,8 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (input.exp_Data == "<")
                     {
-                        result += "\t  cmp\t" + leftOutVar.address.ConvertToString() +
-                            ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                        result += "\t  cmp\t" + leftOutVar.ConvertToString() +
+                            ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                         //TODO - swap this to a bool variable? Then change memoryManager call in ParseLogic
                         res = leftOutVar;
                         memoryManager.SetFreeAddress(rightOutVar);
@@ -1232,8 +1271,8 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (input.exp_Data == "<=")
                     {
-                        result += "\t  cmp\t" + leftOutVar.address.ConvertToString() +
-                            ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                        result += "\t  cmp\t" + leftOutVar.ConvertToString() +
+                            ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                         //TODO - swap this to a bool variable? Then change memoryManager call in ParseLogic
                         res = leftOutVar;
                         memoryManager.SetFreeAddress(rightOutVar);
@@ -1248,6 +1287,17 @@ namespace SALO_Core.CodeBlocks
                         result += "\t  jmp\t" + endLabel + AST_Program.separator_line;
                     }
                     res = null;
+                }
+                else if (input.exp_Type == Exp_Type.Variable)
+                {
+                    string leftOutStr = "";
+                    Variable leftOutVar = null;
+                    leftOutVar = ParseExpNode(exp, input, out leftOutStr);
+                    result += leftOutStr;
+                    //Compare to zero, jump if true
+                    result += "\t   or\t" + leftOutVar.ConvertToString() +
+                        ",\t" + leftOutVar.ConvertToString() + AST_Program.separator_line;
+                    result += "\t   jz\t" + endLabel + AST_Program.separator_line;
                 }
                 else throw new NotImplementedException(input.exp_Data + " is not yet supported");
 
@@ -1275,7 +1325,8 @@ namespace SALO_Core.CodeBlocks
                 resString = "";
                 if (parent.addComments)
                 {
-                    resString += ";local variable " + variable.Data + AST_Program.separator_line;
+                    resString += ";local " + variable.DataType.GetName() + " variable " 
+                        + variable.Data + AST_Program.separator_line;
                 }
             }
             private Variable ParseExpression(AST_Expression input, out string resString)
@@ -1350,7 +1401,7 @@ namespace SALO_Core.CodeBlocks
                                 {
                                     //throw new ASS_Exception("TODO - Should we break or override?", -1);
                                 }
-                                result += "\t  mov\teax,\t" + rightOutVar.address.ConvertToString() +
+                                result += "\t  mov\teax,\t" + rightOutVar.ConvertToString() +
                                     AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(rightOutVar);
                                 rightOutVar = new Variable(null, rightOutVar.dataType, new Address("eax", -1));
@@ -1376,8 +1427,8 @@ namespace SALO_Core.CodeBlocks
                                 Variable rightTempVar = memoryManager.GetFreeAddress(null,
                                     ParameterType.GetParameterType("int32"));
 
-                                result += "\t  lea\t" + rightTempVar.address.ConvertToString() +
-                                    ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                                result += "\t  lea\t" + rightTempVar.ConvertToString() +
+                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(rightOutVar);
 
                                 res = rightTempVar;
@@ -1419,8 +1470,8 @@ namespace SALO_Core.CodeBlocks
                                 leftOutVar = memoryManager.GetFreeRegister(leftTempVar.dataType);
                             }
                             //memoryManager.UpdateRegisterUsage(leftOutVar);
-                            result += "\t  mov\t" + leftOutVar.address.ConvertToString() +
-                                ",\t" + leftTempVar.address.ConvertToString() + AST_Program.separator_line;
+                            result += "\t  mov\t" + leftOutVar.ConvertToString() +
+                                ",\t" + leftTempVar.ConvertToString() + AST_Program.separator_line;
                             memoryManager.SetFreeAddress(leftTempVar);
                         }
 
@@ -1434,6 +1485,13 @@ namespace SALO_Core.CodeBlocks
                             rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
                         }
                         result += rightOutStr;
+                        //For constants, we can assign them to different int sizes
+                        if (rightOutVar.address.length == -2 &&
+                            leftOutVar.dataType.GetName().StartsWith("int") &&
+                            rightOutVar.dataType.GetName().StartsWith("int"))
+                        {
+                            rightOutVar.dataType = leftOutVar.dataType;
+                        }
                         if (!leftOutVar.dataType.Equals(rightOutVar.dataType))
                         {
                             throw new NotImplementedException("Can\'t perform " + input.exp_Data +
@@ -1442,22 +1500,22 @@ namespace SALO_Core.CodeBlocks
 
                         if (input.exp_Data == "+")
                         {
-                            result += "\t  add\t" + leftOutVar.address.ConvertToString() +
-                                ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                            result += "\t  add\t" + leftOutVar.ConvertToString() +
+                                ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                             res = leftOutVar;
                             memoryManager.SetFreeAddress(rightOutVar);
                         }
                         else if (input.exp_Data == "-")
                         {
-                            result += "\t  sub\t" + leftOutVar.address.ConvertToString() +
-                                ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                            result += "\t  sub\t" + leftOutVar.ConvertToString() +
+                                ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                             res = leftOutVar;
                             memoryManager.SetFreeAddress(rightOutVar);
                         }
                         else if (input.exp_Data == "*")
                         {
-                            result += "\t imul\t" + leftOutVar.address.ConvertToString() +
-                                ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                            result += "\t imul\t" + leftOutVar.ConvertToString() +
+                                ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                             res = leftOutVar;
                             memoryManager.SetFreeAddress(rightOutVar);
                         }
@@ -1473,7 +1531,7 @@ namespace SALO_Core.CodeBlocks
                                 }
 
                                 //It's an operator that requires eax, MOV it there
-                                result += "\t  mov\teax,\t" + leftOutVar.address.ConvertToString() +
+                                result += "\t  mov\teax,\t" + leftOutVar.ConvertToString() +
                                     AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(leftOutVar);
                                 leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
@@ -1485,8 +1543,8 @@ namespace SALO_Core.CodeBlocks
                                 //We have a constant, move to ebx or ecx
                                 var tempRightOutVar = rightOutVar;
                                 rightOutVar = memoryManager.GetFreeRegister(tempRightOutVar.dataType);
-                                result += "\t  mov\t" + rightOutVar.address.ConvertToString() +
-                                    ",\t" + tempRightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                                result += "\t  mov\t" + rightOutVar.ConvertToString() +
+                                    ",\t" + tempRightOutVar.ConvertToString() + AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(tempRightOutVar);
                             }
 
@@ -1496,7 +1554,7 @@ namespace SALO_Core.CodeBlocks
                             //Zero-out EDX
                             result += "\t  xor\tedx,\tedx" + AST_Program.separator_line;
                             //memoryManager.usesDX = true;
-                            result += "\t idiv\t" + rightOutVar.address.ConvertToString() + 
+                            result += "\t idiv\t" + rightOutVar.ConvertToString() + 
                                 AST_Program.separator_line;
                             memoryManager.SetFreeAddress(rightOutVar);
                             //Pop edx in case something uses it
@@ -1507,7 +1565,7 @@ namespace SALO_Core.CodeBlocks
                                 res = memoryManager.GetFreeRegister(leftOutVar.dataType);
                                 //We know for a fact that left operand is in eax
                                 memoryManager.SetFreeAddress(leftOutVar);
-                                result += "\t  mov\t" + res.address.ConvertToString() +
+                                result += "\t  mov\t" + res.ConvertToString() +
                                     ",\teax" + AST_Program.separator_line;
                                 result += "\t  pop\teax" + AST_Program.separator_line;
                             }
@@ -1529,7 +1587,7 @@ namespace SALO_Core.CodeBlocks
                                 }
 
                                 //It's an operator that requires eax, MOV it there
-                                result += "\t  mov\teax,\t" + leftOutVar.address.ConvertToString() +
+                                result += "\t  mov\teax,\t" + leftOutVar.ConvertToString() +
                                     AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(leftOutVar);
                                 leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
@@ -1541,8 +1599,8 @@ namespace SALO_Core.CodeBlocks
                                 //We have a constant, move to ebx or ecx
                                 var tempRightOutVar = rightOutVar;
                                 rightOutVar = memoryManager.GetFreeRegister(tempRightOutVar.dataType);
-                                result += "\t  mov\t" + rightOutVar.address.ConvertToString() +
-                                    ",\t" + tempRightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                                result += "\t  mov\t" + rightOutVar.ConvertToString() +
+                                    ",\t" + tempRightOutVar.ConvertToString() + AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(tempRightOutVar);
                             }
 
@@ -1552,12 +1610,12 @@ namespace SALO_Core.CodeBlocks
                             //Zero-out EDX
                             result += "\t  xor\tedx,\tedx" + AST_Program.separator_line;
                             //memoryManager.usesDX = true;
-                            result += "\t idiv\t" + rightOutVar.address.ConvertToString() +
+                            result += "\t idiv\t" + rightOutVar.ConvertToString() +
                                 AST_Program.separator_line;
                             memoryManager.SetFreeAddress(rightOutVar);
                             //Result is in edx, MOV it somewhere
                             var tempLeftOutVar = memoryManager.GetFreeRegister(leftOutVar.dataType);
-                            result += "\t  mov\t" + tempLeftOutVar.address.ConvertToString() +
+                            result += "\t  mov\t" + tempLeftOutVar.ConvertToString() +
                                 ",\tedx" + AST_Program.separator_line;
                             res = tempLeftOutVar;
                             memoryManager.SetFreeAddress(leftOutVar);
@@ -1576,8 +1634,8 @@ namespace SALO_Core.CodeBlocks
                                 throw new ASS_Exception("Can\'t assign to " + input.left.exp_Type.ToString(),
                                     new ASS_Exception("Assignment is supported only for variables", -1), -1);
                             }
-                            result += "\t  mov\t" + leftOutVar.address.ConvertToString() +
-                                ",\t" + rightOutVar.address.ConvertToString() + AST_Program.separator_line;
+                            result += "\t  mov\t" + leftOutVar.ConvertToString() +
+                                ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                             res = leftOutVar;
                             memoryManager.SetFreeAddress(rightOutVar);
                         }
@@ -1624,16 +1682,21 @@ namespace SALO_Core.CodeBlocks
                 else if (input.exp_Type == Exp_Type.Function)
                 {
                     //TODO - check parameter types
-                    string rightOutString = "";
-                    LinkedList<Variable> fParameters = ToParameterList(exp, input.right, out rightOutString);
-                    string[] fParameterTypes = fParameters.Select(a => a.dataType.GetName()).ToArray();
-                    result += rightOutString;
+                    string rightOutStringParams = "";
+                    LinkedList<Exp_Node> fParameters = ToParameterList(exp, input.right, out rightOutStringParams);
+                    string rightOutStringValues = "";
+                    LinkedList<Variable> fVariables = PushParameters(exp, fParameters, out rightOutStringValues);
+                    string[] fParameterTypes = fVariables.Select(a => a.dataType.GetName()).Reverse().ToArray();
+                    bool[] fParameterIntConstants = fVariables.Select(a => a.address.length == -2 &&
+                    a.dataType.GetName().StartsWith("int")).Reverse().ToArray();
+                    //result += rightOutString;
                     AST_Function fUsed = null;
                     //1 for default libraries, 2 for salo functions
                     int location = 0;
                     //TODO - check for exact match
-                    var fCorresponding = parent.defaultLibs.Find(a => a.Includes(input.exp_Data, fParameterTypes))?.
-                        Find(input.exp_Data, fParameterTypes);
+                    var fCorresponding = parent.defaultLibs.
+                        Find(a => a.Includes(input.exp_Data, fParameterTypes, fParameterIntConstants))?.
+                        Find(input.exp_Data, fParameterTypes, fParameterIntConstants);
                     if (fCorresponding != null)
                     {
                         //Mark library and function as used
@@ -1653,13 +1716,19 @@ namespace SALO_Core.CodeBlocks
                                 a.ast_function.path != ast_function.path)
                                 return false;
                             if (a.name != input.exp_Data) return false;
-                            if (fParameters.Count == 0 &&
+                            if (fVariables.Count == 0 &&
                                 a.parameters.Count == 1 && a.parameters[0].dataType.GetName() == "void")
                                 return true;
-                            if (a.parameters.Count != fParameters.Count) return false;
+                            if (a.parameters.Count != fVariables.Count) return false;
                             for (int loop = 0; loop < a.parameters.Count; ++loop)
                             {
-                                if (!a.parameters[loop].dataType.Equals(fParameters.ElementAt(loop).dataType))
+                                if (!a.parameters[loop].dataType.Equals(
+                                    fVariables.ElementAt(fVariables.Count - loop - 1).dataType)
+                                    && !(
+                                    a.parameters[loop].dataType.GetName().StartsWith("int") &&
+                                    fVariables.ElementAt(fVariables.Count - loop - 1).dataType.
+                                    GetName().StartsWith("int") &&
+                                    fVariables.ElementAt(fVariables.Count - loop - 1).address.length == -2))
                                     return false;
                             }
                             return true;
@@ -1672,11 +1741,12 @@ namespace SALO_Core.CodeBlocks
                         else
                         {
                             string paramList = "";
-                            foreach (var par in fParameters)
+                            IEnumerable<Variable> fParReversed = fVariables.Reverse();
+                            foreach (var par in fParReversed)
                             {
                                 paramList += par.dataType.GetName() + ", ";
                             }
-                            if (fParameters.Count > 0)
+                            if (fVariables.Count > 0)
                                 paramList = paramList.Remove(paramList.Length - 2);
                             throw new ASS_Exception(
                                 "Function " + input.exp_Data + "(" + paramList +
@@ -1686,8 +1756,8 @@ namespace SALO_Core.CodeBlocks
                     if (fUsed != null)
                     {
                         //We are dealing with a library function
-                        if (fUsed.functionType == FunctionType.cdecl)
-                        {
+                        //if (fUsed.functionType == FunctionType.cdecl)
+                        //{
                             bool popEAX = false;
                             if (memoryManager.IsTaken("eax"))
                             {
@@ -1703,15 +1773,17 @@ namespace SALO_Core.CodeBlocks
                                 result += "\t push\tedx" + AST_Program.separator_line;
                             }
 
-                            var el = fParameters.Last;
-                            while (el != null)
-                            {
-                                result += "\t push\t" + el.Value.address.ConvertToString() +
-                                    AST_Program.separator_line;
-                                //TODO - should we free the address?
-                                memoryManager.SetFreeAddress(el.Value);
-                                el = el.Previous;
-                            }
+                            //var el = fParameters.Last;
+                            //while (el != null)
+                            //{
+                            //    result += "\t push\t" + el.Value.ConvertToString() +
+                            //        AST_Program.separator_line;
+                            //    //TODO - should we free the address?
+                            //    memoryManager.SetFreeAddress(el.Value);
+                            //    el = el.Previous;
+                            //}
+                            result += rightOutStringParams;
+                            result += rightOutStringValues;
                             if (location == 1)
                             {
                                 result += "\t call\t[" + input.exp_Data + "]" + AST_Program.separator_line;
@@ -1725,9 +1797,9 @@ namespace SALO_Core.CodeBlocks
                             //TODO - dump variables
 
                             //Shift stack pointer to hide pushed vars without dumping them
-                            if(GetByteCount(fParameters) > 0)
+                            if(fUsed.functionType == FunctionType.cdecl && GetByteCount(fVariables) > 0)
                             {
-                                result += "\t  add\tesp,\t" + GetByteCount(fParameters) + AST_Program.separator_line;
+                                result += "\t  add\tesp,\t" + GetByteCount(fVariables) + AST_Program.separator_line;
                             }
                             if (callToSelf)
                             {
@@ -1740,18 +1812,22 @@ namespace SALO_Core.CodeBlocks
                             if (popEAX)
                             {
                                 res = memoryManager.GetFreeAddress(null, fUsed.retValue.DataType);
-                                result += "\t  mov\t" + res.address.ConvertToString() + ",\teax" +
+                                result += "\t  mov\t" + res.ConvertToString() + ",\teax" +
                                     AST_Program.separator_line;
                                 result += "\t  pop\teax" + AST_Program.separator_line;
                             }
                             else
                             {
                                 //TODO - calculate return type
-                                res = new Variable(null, ParameterType.GetParameterType("int32"),
+                                res = new Variable(
+                                    null,
+                                    fUsed.retValue.DataType,
+                                    //ParameterType.GetParameterType("int32"),
                                     new Address("eax", -1));
                                 memoryManager.UpdateRegisterUsage(res);
                             }
-                        }
+                        //}
+                        /*
                         else if (fUsed.functionType == FunctionType.stdcall)
                         {
                             bool popEAX = false;
@@ -1774,7 +1850,7 @@ namespace SALO_Core.CodeBlocks
                             var el = fParameters.First;
                             while (el != null)
                             {
-                                result += ",\t" + el.Value.address.ConvertToString();
+                                result += ",\t" + el.Value.ConvertToString();
                                 memoryManager.SetFreeAddress(el.Value);
                                 el = el.Next;
                             }
@@ -1783,7 +1859,7 @@ namespace SALO_Core.CodeBlocks
                             if (popEAX)
                             {
                                 res = memoryManager.GetFreeAddress(null, fUsed.retValue.DataType);
-                                result += "\t  mov\t" + res.address.ConvertToString() + ",\teax" +
+                                result += "\t  mov\t" + res.ConvertToString() + ",\teax" +
                                     AST_Program.separator_line;
                                 result += "\t  pop\teax" + AST_Program.separator_line;
                             }
@@ -1792,14 +1868,15 @@ namespace SALO_Core.CodeBlocks
                                 //TODO - calculate return type
                                 res = new Variable(
                                     null,
-                                    ParameterType.GetParameterType("int32"),
+                                    fUsed.retValue.DataType,
+                                    //ParameterType.GetParameterType("int32"),
                                     new Address("eax", -1));
                             }
-                        }
-                        else
-                        {
-                            throw new NotImplementedException(fUsed.functionType + " is not supported");
-                        }
+                        }*/
+                        //else
+                        //{
+                        //    throw new NotImplementedException(fUsed.functionType + " is not supported");
+                        //}
                     }
                     else throw new ASS_Exception(input.exp_Data + " function was not found", -1);
                 }
@@ -1807,23 +1884,74 @@ namespace SALO_Core.CodeBlocks
                 resString = result;
                 return res;
             }
-            private LinkedList<Variable> ToParameterList(AST_Expression exp, Exp_Node head, out string result)
+            private LinkedList<Variable> PushParameters(
+                AST_Expression exp, LinkedList<Exp_Node> parameters, out string result)
             {
+                string resString = "";
                 LinkedList<Variable> res = new LinkedList<Variable>();
+                var val = parameters.Last;
+                while(val != null)
+                {
+                    string variableResult = "";
+                    Variable variable = ParseExpNode(exp, val.Value, out variableResult);
+                    IParameterType parameterType = variable.dataType;
+                    resString += variableResult;
+
+                    if (variable.dataType.GetLengthInBytes() != 4/* &&
+                        variable.address.length == -1 &&
+                        variable.address.IsRegister()*/)
+                    {
+                        //We need to zero-extend the value
+                        var reg = memoryManager.GetFreeRegister(ParameterType.GetParameterType("int32"));
+                        resString += "\tmovzx\t" + reg.ConvertToString() + ",\t" +
+                        variable.ConvertToString() + AST_Program.separator_line;
+                        memoryManager.SetFreeAddress(variable);
+                        variable = reg;
+                    }
+
+                    resString += "\t push\t" + variable.ConvertToString() + AST_Program.separator_line;
+                    memoryManager.SetFreeAddress(variable);
+                    //TODO - It was probably a bad decision to re-set the data type
+                    variable.dataType = parameterType;
+                    res.AddLast(variable);
+                    val = val.Previous;
+                }
+                result = resString;
+                return res;
+            }
+            private LinkedList<Exp_Node> ToParameterList(AST_Expression exp, Exp_Node head, out string result)
+            {
+                LinkedList<Exp_Node> res = new LinkedList<Exp_Node>();
                 if (head == null)
                 {
                     result = "";
                     return res;
                 }
+                string resString = "";
                 if (head.exp_Type != Exp_Type.Operator || head.exp_Data != ",")
                 {
-                    res.AddLast(ParseExpNode(exp, head, out result));
+                    //Variable variable = ParseExpNode(exp, head, out result);
+
+                    //if (variable.dataType.GetLengthInBytes() != 4 && 
+                    //    variable.address.length == -1 && 
+                    //    variable.address.IsRegister())
+                    //{
+                    //    //We need to zero-extend the value
+                    //    var reg = memoryManager.GetFreeRegister(ParameterType.GetParameterType("int32"));
+                    //    resString += "\tmovzx\t" + reg + ",\t" + 
+                    //    variable.ConvertToString() + AST_Program.separator_line;
+                    //    memoryManager.SetFreeAddress(variable);
+                    //    variable = reg;
+                    //}
+                    result = "";
+                    res.AddLast(head);
                     return res;
                 }
-                string resString = "";
-                SALO_Core.Tools.ClassExtensions.AppendRange(res, ToParameterList(exp, head.left, out resString));
-                SALO_Core.Tools.ClassExtensions.AppendRange(res, ToParameterList(exp, head.right, out resString));
-                result = resString;
+                string resLeft = "";
+                SALO_Core.Tools.ClassExtensions.AppendRange(res, ToParameterList(exp, head.left, out resLeft));
+                string resRight = "";
+                SALO_Core.Tools.ClassExtensions.AppendRange(res, ToParameterList(exp, head.right, out resRight));
+                result = resString + resLeft + resRight;
                 return res;
             }
         }

@@ -17,6 +17,10 @@ namespace SALO_Core.CodeBlocks
                     return new PT_Lpcstr();
                 case "int32":
                     return new PT_Int32();
+                case "int16":
+                    return new PT_Int16();
+                case "int8":
+                    return new PT_Int8();
                 case "void":
                     return new PT_Void();
                 case "none":

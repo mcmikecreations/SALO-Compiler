@@ -108,6 +108,23 @@ namespace SALO_Core.CodeBlocks
                 return true;
             }) != null;
         }
+        public bool Includes(string functionName, string[] parameterTypes, bool[] constantInts)
+        {
+            return functions.Find(a =>
+            {
+                if (a.name != functionName) return false;
+                if (parameterTypes.Length != a.parameters.Count) return false;
+                for (int i = 0; i < parameterTypes.Length; ++i)
+                {
+                    if (constantInts[i] &&
+                        parameterTypes[i].StartsWith("int") &&
+                        a.parameters[i].type.GetName().StartsWith("int"))
+                        return true;
+                    if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
+                }
+                return true;
+            }) != null;
+        }
         public Function Find(string functionName, params string[] parameterTypes)
         {
             return functions.Find(a =>
@@ -116,6 +133,23 @@ namespace SALO_Core.CodeBlocks
                 if (parameterTypes.Length != a.parameters.Count) return false;
                 for (int i = 0; i < parameterTypes.Length; ++i)
                 {
+                    if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
+                }
+                return true;
+            });
+        }
+        public Function Find(string functionName, string[] parameterTypes, bool[] constantInts)
+        {
+            return functions.Find(a =>
+            {
+                if (a.name != functionName) return false;
+                if (parameterTypes.Length != a.parameters.Count) return false;
+                for (int i = 0; i < parameterTypes.Length; ++i)
+                {
+                    if (constantInts[i] &&
+                        parameterTypes[i].StartsWith("int") &&
+                        a.parameters[i].type.GetName().StartsWith("int"))
+                        return true;
                     if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
                 }
                 return true;
