@@ -122,7 +122,9 @@ namespace SALO_Core.CodeBlocks.Expressions
                     }
                 }
                 if (!opRightFilled && !opLeftFilled) continue;
-                if (input.Count - opIndexesRight[opRight] - 1 < opIndexesLeft[opLeft] && (opRightFilled || !opLeftFilled))
+                if (input.Count - opIndexesRight[opRight] - 1 < 
+                    (opIndexesLeft[opLeft] == -1 ? input.Count : opIndexesLeft[opLeft]) && 
+                    (opRightFilled || !opLeftFilled))
                 {
                     op = opRight;
                     opIndexes[op] = opIndexesRight[op];

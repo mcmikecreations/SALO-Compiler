@@ -22,7 +22,7 @@ namespace SALO_Core.CodeBlocks
                 throw new ASS_Exception("Error converting parameter type to an assembler label",
                     new ASS_Exception("Empty parameter types can\'t be converted to an assembler label", -1), -1);
             }
-            else if (parameterType is PT_Int32)
+            else if (parameterType is PT_Int32 || parameterType is PT_Ptr)
             {
                 return "dd";
             }
@@ -227,8 +227,8 @@ namespace SALO_Core.CodeBlocks
                     }
                 }
                 parsedInput += "0";
-                Variable v = new Variable(new AST_Variable(null, "lpcstr", parsedInput),
-                    ParameterType.GetParameterType("lpcstr"),
+                Variable v = new Variable(new AST_Variable(null, "int8_ptr", parsedInput),
+                    ParameterType.GetParameterType("int8_ptr"),
                     new Address("lpcstr" + values.Count.ToString(), -3));
                 Variable found = values.Find(a =>
                     a.dataType.Equals(v.dataType) &&
@@ -1424,14 +1424,52 @@ namespace SALO_Core.CodeBlocks
 
                             if (input.exp_Data == "&")
                             {
+                                if(input.right.exp_Type != Exp_Type.Variable)
+                                {
+                                    throw new ASS_Exception(
+                                        "Address-of works only with variables, not with " + input.right.exp_Data, -1);
+                                }
                                 Variable rightTempVar = memoryManager.GetFreeAddress(null,
-                                    ParameterType.GetParameterType("int32"));
+                                    ParameterType.GetParameterType(rightOutVar.dataType.GetName() + "_ptr"));
 
                                 result += "\t  lea\t" + rightTempVar.ConvertToString() +
                                     ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(rightOutVar);
 
                                 res = rightTempVar;
+                            }
+                            else if (input.exp_Data == "*")
+                            {
+                                if (input.right.exp_Type != Exp_Type.Variable)
+                                {
+                                    throw new ASS_Exception(
+                                        "Dereference works only with variables, not with " + input.right.exp_Data, -1);
+                                }
+
+                                string rightType = rightOutVar.dataType.GetName();
+                                if (!rightType.EndsWith("_ptr"))
+                                {
+                                    throw new ASS_Exception(
+                                        "Can\'t dereference data type " + rightOutVar.dataType.GetName(), -1);
+                                }
+                                if(rightOutVar.address.length != -1)
+                                {
+                                    Variable rightTempVar = memoryManager.GetFreeRegister(rightOutVar.dataType);
+                                    result += "\t  mov\t" + rightTempVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(rightOutVar);
+                                    rightOutVar = rightTempVar;
+                                }
+
+                                Variable resultVar = memoryManager.GetFreeRegister(
+                                    ParameterType.GetParameterType(
+                                        rightType.Remove(rightType.Length - "_ptr".Length)));
+
+                                result += "\t  mov\t" + resultVar.ConvertToString() +
+                                    ",\tdword ptr " + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                memoryManager.SetFreeAddress(rightOutVar);
+
+                                res = resultVar;
                             }
                             else throw new NotImplementedException(input.exp_Data + " is not supported");
                         }
@@ -1488,7 +1526,9 @@ namespace SALO_Core.CodeBlocks
                         //For constants, we can assign them to different int sizes
                         if (rightOutVar.address.length == -2 &&
                             leftOutVar.dataType.GetName().StartsWith("int") &&
-                            rightOutVar.dataType.GetName().StartsWith("int"))
+                            rightOutVar.dataType.GetName().StartsWith("int") &&
+                            !leftOutVar.dataType.GetName().EndsWith("_ptr") &&
+                            !rightOutVar.dataType.GetName().EndsWith("_ptr"))
                         {
                             rightOutVar.dataType = leftOutVar.dataType;
                         }
@@ -1687,8 +1727,12 @@ namespace SALO_Core.CodeBlocks
                     string rightOutStringValues = "";
                     LinkedList<Variable> fVariables = PushParameters(exp, fParameters, out rightOutStringValues);
                     string[] fParameterTypes = fVariables.Select(a => a.dataType.GetName()).Reverse().ToArray();
-                    bool[] fParameterIntConstants = fVariables.Select(a => a.address.length == -2 &&
-                    a.dataType.GetName().StartsWith("int")).Reverse().ToArray();
+                    bool[] fParameterIntConstants = 
+                        fVariables.Select(a => 
+                        a.address.length == -2 &&
+                        a.dataType.GetName().StartsWith("int") &&
+                        !a.dataType.GetName().EndsWith("_ptr")
+                        ).Reverse().ToArray();
                     //result += rightOutString;
                     AST_Function fUsed = null;
                     //1 for default libraries, 2 for salo functions
@@ -1726,8 +1770,11 @@ namespace SALO_Core.CodeBlocks
                                     fVariables.ElementAt(fVariables.Count - loop - 1).dataType)
                                     && !(
                                     a.parameters[loop].dataType.GetName().StartsWith("int") &&
+                                    !a.parameters[loop].dataType.GetName().EndsWith("_ptr") &&
                                     fVariables.ElementAt(fVariables.Count - loop - 1).dataType.
                                     GetName().StartsWith("int") &&
+                                    !fVariables.ElementAt(fVariables.Count - loop - 1).dataType.
+                                    GetName().EndsWith("_ptr") &&
                                     fVariables.ElementAt(fVariables.Count - loop - 1).address.length == -2))
                                     return false;
                             }

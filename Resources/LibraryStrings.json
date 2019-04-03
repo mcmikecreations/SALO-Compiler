@@ -1,0 +1,122 @@
+[
+	{
+		"name" : "kernel32",
+		"path" : "kernel32.dll",
+		"functions" :
+		[
+			{
+				"name" : "ExitProcess",
+				"path" : "ExitProcess",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "code",
+						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "SetConsoleCP",
+				"path" : "SetConsoleCP",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "code",
+						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "SetConsoleOutputCP",
+				"path" : "SetConsoleOutputCP",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "code",
+						"type" : "int32"
+					}
+				]
+			}
+		]
+	},
+	{
+		"name" : "msvcrt",
+		"path" : "msvcrt.dll",
+		"functions" :
+		[
+			{
+				"name" : "abs",
+				"path" : "abs",
+				"type" : "cdecl",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "val",
+						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "scanint32",
+				"path" : "scanf",
+				"type" : "cdecl",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "val",
+						"type" : "int8_ptr"
+					},
+					{
+						"name" : "val",
+						"type" : "int32_ptr"
+					}
+				]
+			},
+			{
+				"name" : "printint32",
+				"path" : "printf",
+				"type" : "cdecl",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "val",
+						"type" : "int8_ptr"
+					},
+					{
+						"name" : "val",
+						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "printstr",
+				"path" : "printf",
+				"type" : "cdecl",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "val",
+						"type" : "int8_ptr"
+					}
+				]
+			}
+		]
+	}
+]

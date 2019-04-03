@@ -118,7 +118,9 @@ namespace SALO_Core.CodeBlocks
                 {
                     if (constantInts[i] &&
                         parameterTypes[i].StartsWith("int") &&
-                        a.parameters[i].type.GetName().StartsWith("int"))
+                        !parameterTypes[i].EndsWith("_ptr") &&
+                        a.parameters[i].type.GetName().StartsWith("int") &&
+                        !a.parameters[i].type.GetName().EndsWith("_ptr"))
                         return true;
                     if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
                 }
@@ -148,7 +150,9 @@ namespace SALO_Core.CodeBlocks
                 {
                     if (constantInts[i] &&
                         parameterTypes[i].StartsWith("int") &&
-                        a.parameters[i].type.GetName().StartsWith("int"))
+                        !parameterTypes[i].EndsWith("_ptr") &&
+                        a.parameters[i].type.GetName().StartsWith("int") &&
+                        !a.parameters[i].type.GetName().EndsWith("_ptr"))
                         return true;
                     if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
                 }

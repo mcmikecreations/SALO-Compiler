@@ -82,6 +82,7 @@
     <Compile Include="CodeBlocks\ParameterTypes\PT_Int8.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Lpcstr.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_None.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\PT_Ptr.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Void.cs" />
     <Compile Include="Exceptions\ASS\ASS_Exception.cs" />
     <Compile Include="Exceptions\ASS\ASS_WrongNodeException.cs" />
@@ -104,13 +105,11 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <Content Include="Resources\LocaleStrings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions />

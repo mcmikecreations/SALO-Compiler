@@ -59,15 +59,5 @@ namespace SALO_Core.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] LocaleStrings {
-            get {
-                object obj = ResourceManager.GetObject("LocaleStrings", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
     }
 }

@@ -26,6 +26,13 @@ namespace SALO_Core.CodeBlocks
                 case "none":
                     return new PT_None();
                 default:
+                    if (input.EndsWith("_ptr"))
+                    {
+                        return new PT_Ptr()
+                        {
+                            innerParameterType = GetParameterType(input.Remove(input.Length - "_ptr".Length))
+                        };
+                    }
                     throw new NotImplementedException(input + " is not yet supported");
             }
         }

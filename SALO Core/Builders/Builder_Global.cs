@@ -133,7 +133,7 @@ namespace SALO_Core.Builders
 			Initialized = true;
 		}
 		public Builder_Global(string input, string inputPath, Language lang) : 
-            this(input, inputPath, "Resources\\LocaleStrings.json", lang)
+            this(input, inputPath, "..\\Resources\\LocaleStrings.json", lang)
 		{
 
 		}

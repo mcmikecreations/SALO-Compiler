@@ -50,6 +50,7 @@ namespace SALO_Core.AST
             //new AST_Operator("=", 2, 0, null, true, false, false),
 			new AST_Operator("( )", 1, 2, null, true, true, false),
 			new AST_Operator("[ ]", 1, 2, null, true, true, false),
+			new AST_Operator("*", 1, 3, true, false, false, false),
 			new AST_Operator("&", 1, 3, true, false, false, false),
             new AST_Operator("*", 2, 5, null, true, false, false),
             new AST_Operator("/", 2, 5, null, true, false, false),

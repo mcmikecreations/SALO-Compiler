@@ -38,12 +38,36 @@
 	"names_translated" :
 	[
 		{
+			"locale" : "₴",
+			"translated" : ";"
+		},
+		{
 			"locale" : "їнасипати",
-			"translated" : "#merge"
+			"translated" : "#include"
 		},
 		{
 			"locale" : "їнехай",
 			"translated" : "#define"
+		},
+		{
+			"locale" : "ївсенехай",
+			"translated" : "#undef"
+		},
+		{
+			"locale" : "їякщо",
+			"translated" : "#if"
+		},
+		{
+			"locale" : "їінакше",
+			"translated" : "#else"
+		},
+		{
+			"locale" : "ївсе",
+			"translated" : "#endif"
+		},
+		{
+			"locale" : "рідний",
+			"translated" : "native"
 		},
 		{
 			"locale" : "спільний",
@@ -58,14 +82,6 @@
 			"translated" : "function"
 		},
 		{
-			"locale" : "кусень",
-			"translated" : "action"
-		},
-		{
-			"locale" : "шкварок",
-			"translated" : "block"
-		},
-		{
 			"locale" : "бере",
 			"translated" : "takes"
 		},
@@ -76,6 +92,18 @@
 		{
 			"locale" : "смакує",
 			"translated" : "does"
+		},
+		{
+			"locale" : "якщо",
+			"translated" : "if"
+		},
+		{
+			"locale" : "поки",
+			"translated" : "while"
+		},
+		{
+			"locale" : "для",
+			"translated" : "for"
 		},
 		{
 			"locale" : "кінець",
@@ -94,8 +122,16 @@
 			"translated" : "int32"
 		},
 		{
+			"locale" : "куцик",
+			"translated" : "int16"
+		},
+		{
 			"locale" : "буква",
 			"translated" : "int8"
+		},
+		{
+			"locale" : "стрічка",
+			"translated" : "int8_ptr"
 		},
 		{
 			"locale" : "дріб",
@@ -104,6 +140,10 @@
 		{
 			"locale" : "запит",
 			"translated" : "bool"
+		},
+		{
+			"locale" : "путь",
+			"translated" : "ptr"
 		},
 		{
 			"locale" : "головний",
