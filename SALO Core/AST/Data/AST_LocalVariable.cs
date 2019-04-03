@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using SALO_Core.Exceptions;
 
-namespace SALO_Core.AST
+namespace SALO_Core.AST.Data
 {
     public class AST_LocalVariable : AST_Expression
     {

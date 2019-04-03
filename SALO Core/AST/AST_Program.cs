@@ -109,6 +109,7 @@ namespace SALO_Core.AST
                         //TODO - do checks for other function types
                         if (input.IndexOf("function", j) == j)
 						{
+                            //We have a function
 							int k = j + "function".Length + 1;
 
 							if (k >= input.Length)
@@ -137,6 +138,36 @@ namespace SALO_Core.AST
 							i = end;
 							continue;
 						}
+                        else if (input.IndexOf("structure", j) == j)
+                        {
+                            int k = j + "structure".Length + 1;
+
+                            if (k >= input.Length)
+                                throw new AST_BadFormatException("Failed to parse structure name",
+                                            new ArgumentOutOfRangeException("input", "Reached the end of input"), charIndex + input.Length - 1);
+                            if (!(char.IsLetter(input[k]) || AST_Expression.naming_ast.Contains(input[k])))
+                                throw new AST_BadFormatException("Structure name not allowed",
+                                            new FormatException("Structure name should start with a letter or " + AST_Expression.naming_ast), charIndex + k);
+                            string nm = "";
+                            while (char.IsLetterOrDigit(input[k]) || AST_Expression.naming_ast.Contains(input[k]))
+                            {
+                                nm += input[k];
+                                ++k;
+                                if (k >= input.Length) break;
+                            }
+                            string structend = "ends " + nm;
+                            int end = input.IndexOf(structend, k);
+                            if (end == -1)
+                            {
+                                throw new AST_BadFormatException("Failed to find a corresponding end to function start",
+                                            new FormatException("No corresponding ends for function " + nm), charIndex + input.Length - 1);
+                            }
+                            end += structend.Length;
+                            string structure = input.Substring(i, end - i);
+                            childNodes.AddLast(new AST_Function(this, structure, i));
+                            i = end;
+                            continue;
+                        }
 						else throw new AST_BadFormatException("Failed to parse input", charIndex + j);
 						//TODO - do checks for variables
 					}

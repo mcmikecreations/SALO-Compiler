@@ -363,6 +363,11 @@ namespace SALO_Core.CodeBlocks.Expressions
             }
             return false;
         }
+        public static bool isOperation(Exp_Node piece)
+        {
+            if (piece.exp_Operator.init) return true;
+            return false;
+        }
         public static bool isVariable(string input)
         {
             foreach (var op in AST_Expression.operators_ast)

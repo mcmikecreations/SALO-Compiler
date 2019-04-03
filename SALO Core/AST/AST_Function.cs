@@ -403,7 +403,54 @@ namespace SALO_Core.AST
                     while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
                     if(input.IndexOf("if", insideIndexEnd) != insideIndexEnd)
                     {
-                        throw new AST_BadFormatException("\"if\" not found at the end of an if block", charIndex + insideIndexEnd);
+                        //We should have an else block
+                        if (input.IndexOf("else", insideIndexEnd) != insideIndexEnd)
+                        {
+                            throw new AST_BadFormatException("\"else\" not found at the end of an if-else block", charIndex + insideIndexEnd);
+                        }
+                        insideIndexEnd += "else".Length;
+                        while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
+                        if (input.IndexOf("does", insideIndexEnd) != insideIndexEnd)
+                        {
+                            throw new AST_BadFormatException("\"does\" not found at the middle of an if-else block", charIndex + insideIndexEnd);
+                        }
+                        insideIndexEnd += "does".Length;
+
+                        codeSegments.Push("does");
+                        codeSegmentStart = insideIndexEnd;
+                        //insideIndexEnd++;
+                        while (codeSegments.Count > 0)
+                        {
+                            if (input.IndexOf("does", insideIndexEnd) == insideIndexEnd)
+                            {
+                                codeSegments.Push("does");
+                            }
+                            else if (input.IndexOf("ends", insideIndexEnd) == insideIndexEnd)
+                            {
+                                if (codeSegments.Peek() != "does")
+                                {
+                                    throw new AST_BadFormatException("Failed to parse conditional expression inside else",
+                                        new AST_BadFormatException("Encountered unexpected tokens in bracket stack",
+                                        charIndex + insideIndexEnd), charIndex + insideIndexEnd);
+                                }
+                                codeSegments.Pop();
+                            }
+                            insideIndexEnd++;
+                            if (input.Length <= insideIndexEnd && codeSegments.Count > 0)
+                            {
+                                throw new AST_BadFormatException("Reached end of input while parsing else body",
+                                    charIndex + insideIndexEnd);
+                            }
+                        }
+                        //insideIndexEnd points at letter n from "ends"
+                        insideIndexEnd--;
+                        insideIndexEnd += "ends".Length;
+
+                        while (AST_Program.separator_ast_nosemicolon.IndexOf(input[insideIndexEnd]) != -1) insideIndexEnd++;
+                        if (input.IndexOf("if", insideIndexEnd) != insideIndexEnd)
+                        {
+                            throw new AST_BadFormatException("\"if\" not found at the end of an if-else block", charIndex + insideIndexEnd);
+                        }
                     }
                     insideIndexEnd += "if".Length;
 

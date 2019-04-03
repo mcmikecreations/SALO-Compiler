@@ -1,4 +1,5 @@
-﻿using SALO_Core.Exceptions;
+﻿using SALO_Core.AST.Data;
+using SALO_Core.Exceptions;
 using SALO_Core.Exceptions.ASS;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ namespace SALO_Core.AST.Logic
     public class AST_If : AST_Logic
     {
         public AST_Expression inside { get; protected set; }
+        public LinkedList<AST_Expression> else_expressions;
         public override void Parse(string input, int charIndex)
         {
             input = input.Trim();
@@ -27,7 +29,7 @@ namespace SALO_Core.AST.Logic
             }
             if(input[insideIndexStart] != '(')
             {
-                throw new ASS_Exception("Failed to find conditional expression inside if", charIndex + insideIndexStart);
+                throw new AST_BadFormatException("Failed to find conditional expression inside if", charIndex + insideIndexStart);
             }
 
             Stack<string> brackets = new Stack<string>();
@@ -49,15 +51,15 @@ namespace SALO_Core.AST.Logic
                     }
                     else
                     {
-                        throw new ASS_Exception("Failed to parse conditional expression inside if",
-                            new ASS_Exception("Encountered unexpected tokens in bracket stack", 
+                        throw new AST_BadFormatException("Failed to parse conditional expression inside if",
+                            new AST_BadFormatException("Encountered unexpected tokens in bracket stack", 
                             charIndex + insideIndexEnd), charIndex + insideIndexEnd);
                     }
                 }
                 else insideIndexEnd++;
                 if (input.Length <= insideIndexEnd)
                 {
-                    throw new ASS_Exception("Reached end of input while parsing if brackets",
+                    throw new AST_BadFormatException("Reached end of input while parsing if brackets",
                         charIndex + insideIndexEnd);
                 }
             }
@@ -72,7 +74,7 @@ namespace SALO_Core.AST.Logic
             if(input.IndexOf("does", localInput) != localInput)
             {
                 //We failed to find if body
-                throw new ASS_Exception("Conditional statement body was not found", charIndex + localInput);
+                throw new AST_BadFormatException("Conditional statement body was not found", charIndex + localInput);
             }
             Stack<string> codeSegments = new Stack<string>();
             codeSegments.Push("does");
@@ -88,8 +90,8 @@ namespace SALO_Core.AST.Logic
                 {
                     if(codeSegments.Peek() != "does")
                     {
-                        throw new ASS_Exception("Failed to parse conditional expression inside if",
-                            new ASS_Exception("Encountered unexpected tokens in bracket stack",
+                        throw new AST_BadFormatException("Failed to parse conditional expression inside if",
+                            new AST_BadFormatException("Encountered unexpected tokens in bracket stack",
                             charIndex + localInput), charIndex + localInput);
                     }
                     codeSegments.Pop();
@@ -97,7 +99,7 @@ namespace SALO_Core.AST.Logic
                 localInput++;
                 if (input.Length <= localInput && codeSegments.Count > 0)
                 {
-                    throw new ASS_Exception("Reached end of input while parsing if body",
+                    throw new AST_BadFormatException("Reached end of input while parsing if body",
                         charIndex + localInput);
                 }
             }
@@ -105,12 +107,133 @@ namespace SALO_Core.AST.Logic
             string codeBody = input.Substring(codeSegmentStart + "does".Length, localInput
                 - 1 - "does".Length - codeSegmentStart);
 
-            string[] exps = AST_Function.Split(codeBody, charIndex);
+            int elseIndex = localInput + "ends".Length;
+            while(AST_Program.separator_ast.IndexOf(input[elseIndex]) != -1 && 
+                elseIndex < input.Length)
+            {
+                ++elseIndex;
+            }
+            if(input.IndexOf("if", elseIndex) != elseIndex)
+            {
+                if(input.IndexOf("else", elseIndex) != elseIndex)
+                {
+                    throw new AST_BadFormatException("Bad formatting of if statement", elseIndex);
+                }
+                else
+                {
+                    //We should parse "else"
+                    elseIndex += "else".Length;
+                    while (AST_Program.separator_ast_nosemicolon.IndexOf(input[elseIndex]) != -1)
+                    {
+                        elseIndex++;
+                    }
+                    if(input.IndexOf("does", elseIndex) != elseIndex)
+                    {
+                        throw new AST_BadFormatException("Couldn\'t find does part of else", elseIndex);
+                    }
+                    elseIndex += "does".Length;
+                    int doesCount = 1, elseEndsIndex = elseIndex;
+                    while(doesCount != 0)
+                    {
+                        if(input.IndexOf("does", elseEndsIndex) == elseEndsIndex)
+                        {
+                            doesCount++;
+                            elseEndsIndex += "does".Length;
+                        }
+                        else if (input.IndexOf("ends", elseEndsIndex) == elseEndsIndex)
+                        {
+                            doesCount--;
+                            elseEndsIndex += "ends".Length;
+                        }
+                        else
+                        {
+                            elseEndsIndex++;
+                        }
+                        if(input.Length <= elseEndsIndex && doesCount != 0)
+                        {
+                            throw new AST_BadFormatException("Reached end of input while parsing else body",
+                                charIndex + elseEndsIndex);
+                        }
+                    }
+                    string elseBody = input.Substring(elseIndex, elseEndsIndex - "ends".Length - elseIndex);
+
+                    string[] elseExps = AST_Function.Split(elseBody, charIndex + codeSegmentStart + "does".Length);
+                    if (elseExps.Length > 0)
+                    {
+                        else_expressions = new LinkedList<AST_Expression>();
+                    }
+                    int elseExLength = elseIndex;
+                    foreach (string ex in elseExps)
+                    {
+                        bool hasActualExpression = false;
+                        for (int p = 0; p < ex.Length; ++p)
+                        {
+                            if (!AST_Program.separator_ast.Contains(ex[p]))
+                            {
+                                hasActualExpression = true;
+                                break;
+                            }
+                        }
+                        if (hasActualExpression)
+                        {
+                            string nat = ex.Trim();
+                            if (nat.StartsWith("native does") && nat.EndsWith("native ends"))
+                            {
+                                else_expressions.AddLast(new AST_Native(this, nat, charIndex + elseExLength));
+                            }
+                            else if (nat.StartsWith("if") && nat.EndsWith("ends if"))
+                            {
+                                else_expressions.AddLast(new AST_If(this, nat, charIndex + elseExLength));
+                            }
+                            else if (nat.StartsWith("while") && nat.EndsWith("ends while"))
+                            {
+                                else_expressions.AddLast(new AST_While(this, nat, charIndex + elseExLength));
+                            }
+                            else if (nat.StartsWith("for") && nat.EndsWith("ends for"))
+                            {
+                                else_expressions.AddLast(new AST_For(this, nat, charIndex + elseExLength));
+                            }
+                            else
+                            {
+                                //Try to find local variable
+                                bool isVariable = false;
+                                string[] pieces = nat.Split(AST_Program.separator_ast.ToCharArray(),
+                                    StringSplitOptions.RemoveEmptyEntries);
+                                if (pieces.Length == 2)
+                                {
+                                    //We may have a variable declaration
+                                    isVariable = true;
+                                    try
+                                    {
+                                        //Do a simple parameter check beforehand not to waste time just in case
+                                        var localType = CodeBlocks.ParameterType.GetParameterType(pieces[0]);
+                                        AST_LocalVariable localVariable = new AST_LocalVariable(this, nat, charIndex + elseExLength);
+                                        else_expressions.AddLast(localVariable);
+                                    }
+                                    catch (Exception)
+                                    {
+                                        //It is not
+                                        isVariable = false;
+                                    }
+                                }
+                                if (!isVariable)
+                                {
+                                    //Parse as an expression
+                                    else_expressions.AddLast(new AST_Expression(this, ex + ";", charIndex + elseExLength));
+                                }
+                            }
+                        }
+                        elseExLength += ex.Length + 1;
+                    }
+                }
+            }
+
+            string[] exps = AST_Function.Split(codeBody, charIndex + codeSegmentStart + "does".Length);
             if (exps.Length > 0)
             {
                 expressions = new LinkedList<AST_Expression>();
             }
-            int exLength = 0;
+            int exLength = codeSegmentStart + "does".Length;
             foreach (string ex in exps)
             {
                 bool hasActualExpression = false;
@@ -198,7 +321,16 @@ namespace SALO_Core.AST.Logic
             }
             if (expressions != null)
             {
+                output += indent + "If:\r\n";
                 for (LinkedListNode<AST_Expression> ch = expressions.First; ch != null; ch = ch.Next)
+                {
+                    ch.Value.Print(indent, ch.Next == null, ref output);
+                }
+            }
+            if (else_expressions != null)
+            {
+                output += indent + "Else:\r\n";
+                for (LinkedListNode<AST_Expression> ch = else_expressions.First; ch != null; ch = ch.Next)
                 {
                     ch.Value.Print(indent, ch.Next == null, ref output);
                 }

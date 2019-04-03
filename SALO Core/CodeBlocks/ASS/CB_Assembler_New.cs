@@ -227,8 +227,8 @@ namespace SALO_Core.CodeBlocks
                     }
                 }
                 parsedInput += "0";
-                Variable v = new Variable(new AST_Variable(null, "int8_ptr", parsedInput),
-                    ParameterType.GetParameterType("int8_ptr"),
+                Variable v = new Variable(new AST_Variable(null, "lpcstr", parsedInput),
+                    ParameterType.GetParameterType("lpcstr"),
                     new Address("lpcstr" + values.Count.ToString(), -3));
                 Variable found = values.Find(a =>
                     a.dataType.Equals(v.dataType) &&
@@ -940,50 +940,132 @@ namespace SALO_Core.CodeBlocks
                     if ((exp.head.exp_Type == Exp_Type.Operator && IsOperatorLogic(exp.head.exp_Operator))
                         || exp.head.exp_Type == Exp_Type.Constant)
                     {
-                        //Create a label to get out of scope
-                        string restLabel = ".L" + (localLabels++).ToString();
-
-                        //Parse conditional expression
-                        string conditionResultString = "";
-                        var conditionReturn = ParseLogicNode(statement.inside, exp.head, 
-                            out conditionResultString, restLabel);
-                        memoryManager.SetFreeAddress(conditionReturn);
-                        if (parent.addComments)
+                        if(statement.else_expressions == null)
                         {
-                            result += ";logical statement " + string.Join(" ", statement.inside.nodes) + 
-                                AST_Program.separator_line;
-                        }
-                        result += conditionResultString;
+                            //Create a label to get out of scope
+                            string restLabel = ".L" + (localLabels++).ToString();
 
-                        //Parse expressions inside of the scope
-                        string expressionOutput = "";
-                        foreach (var scopedAstExpression in statement.expressions)
+                            //Parse conditional expression
+                            string conditionResultString = "";
+                            var conditionReturn = ParseLogicNode(statement.inside, exp.head,
+                                out conditionResultString, restLabel);
+                            memoryManager.SetFreeAddress(conditionReturn);
+                            if (parent.addComments)
+                            {
+                                result += ";if statement " + string.Join(" ", statement.inside.nodes) +
+                                    AST_Program.separator_line;
+                            }
+                            result += conditionResultString;
+
+                            //Parse expressions inside of the scope
+                            string expressionOutput = "";
+                            foreach (var scopedAstExpression in statement.expressions)
+                            {
+                                string scopedExpressionOutput = "";
+
+                                if (scopedAstExpression is AST_Native)
+                                {
+                                    ParseNative((AST_Native)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else if (scopedAstExpression is AST_LocalVariable)
+                                {
+                                    ParseLocal((AST_LocalVariable)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else if (scopedAstExpression is AST_Logic)
+                                {
+                                    ParseLogic((AST_Logic)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else
+                                {
+                                    var resVariable = ParseExpression(scopedAstExpression, out scopedExpressionOutput);
+                                    if (resVariable.address.IsRegister()) memoryManager.SetFreeAddress(resVariable);
+                                }
+
+                                expressionOutput += scopedExpressionOutput;
+                            }
+                            result += expressionOutput;
+
+                            result += restLabel + ":" + AST_Program.separator_line;
+                        }
+                        else
                         {
-                            string scopedExpressionOutput = "";
+                            //We have an if-else
+                            //Create a label to get out of scope
+                            string elseLabel = ".L" + (localLabels++).ToString();
+                            string restLabel = ".L" + (localLabels++).ToString();
 
-                            if (scopedAstExpression is AST_Native)
+                            //Parse conditional expression
+                            string conditionResultString = "";
+                            var conditionReturn = ParseLogicNode(statement.inside, exp.head,
+                                out conditionResultString, elseLabel);
+                            memoryManager.SetFreeAddress(conditionReturn);
+                            if (parent.addComments)
                             {
-                                ParseNative((AST_Native)scopedAstExpression, out scopedExpressionOutput);
+                                result += ";if-else statement " + string.Join(" ", statement.inside.nodes) +
+                                    AST_Program.separator_line;
                             }
-                            else if (scopedAstExpression is AST_LocalVariable)
-                            {
-                                ParseLocal((AST_LocalVariable)scopedAstExpression, out scopedExpressionOutput);
-                            }
-                            else if (scopedAstExpression is AST_Logic)
-                            {
-                                ParseLogic((AST_Logic)scopedAstExpression, out scopedExpressionOutput);
-                            }
-                            else
-                            {
-                                var resVariable = ParseExpression(scopedAstExpression, out scopedExpressionOutput);
-                                if (resVariable.address.IsRegister()) memoryManager.SetFreeAddress(resVariable);
-                            }
+                            result += conditionResultString;
 
-                            expressionOutput += scopedExpressionOutput;
+                            //Parse expressions inside of the scope
+                            string expressionOutput = "";
+                            foreach (var scopedAstExpression in statement.expressions)
+                            {
+                                string scopedExpressionOutput = "";
+
+                                if (scopedAstExpression is AST_Native)
+                                {
+                                    ParseNative((AST_Native)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else if (scopedAstExpression is AST_LocalVariable)
+                                {
+                                    ParseLocal((AST_LocalVariable)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else if (scopedAstExpression is AST_Logic)
+                                {
+                                    ParseLogic((AST_Logic)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else
+                                {
+                                    var resVariable = ParseExpression(scopedAstExpression, out scopedExpressionOutput);
+                                    if (resVariable.address.IsRegister()) memoryManager.SetFreeAddress(resVariable);
+                                }
+
+                                expressionOutput += scopedExpressionOutput;
+                            }
+                            result += expressionOutput;
+                            result += "\t  jmp\t" + restLabel + AST_Program.separator_line;
+
+                            result += elseLabel + ":" + AST_Program.separator_line;
+
+                            expressionOutput = "";
+                            foreach (var scopedAstExpression in statement.else_expressions)
+                            {
+                                string scopedExpressionOutput = "";
+
+                                if (scopedAstExpression is AST_Native)
+                                {
+                                    ParseNative((AST_Native)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else if (scopedAstExpression is AST_LocalVariable)
+                                {
+                                    ParseLocal((AST_LocalVariable)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else if (scopedAstExpression is AST_Logic)
+                                {
+                                    ParseLogic((AST_Logic)scopedAstExpression, out scopedExpressionOutput);
+                                }
+                                else
+                                {
+                                    var resVariable = ParseExpression(scopedAstExpression, out scopedExpressionOutput);
+                                    if (resVariable.address.IsRegister()) memoryManager.SetFreeAddress(resVariable);
+                                }
+
+                                expressionOutput += scopedExpressionOutput;
+                            }
+                            result += expressionOutput;
+
+                            result += restLabel + ":" + AST_Program.separator_line;
                         }
-                        result += expressionOutput;
-
-                        result += restLabel + ":" + AST_Program.separator_line;
                     }
                     else throw new ASS_Exception("Bad expression format",
                         new ASS_Exception(exp.head.exp_Data + " is not supported", -1), -1);
@@ -1312,7 +1394,12 @@ namespace SALO_Core.CodeBlocks
                 {
                     addr = locals[locals.Count - 1].address.offset;
                 }
-                addr -= variable.DataType.GetLengthInBytes();
+                int varLength = variable.DataType.GetLengthInBytes();
+                if (Math.Abs(addr) % varLength != 0)
+                {
+                    addr -= varLength - (Math.Abs(addr) % varLength);
+                }
+                addr -= varLength;
                 if(locals.Find(a => a.ast_variable.Data == variable.Data) != null)
                 {
                     //We already declared a local variable wih this name
@@ -1325,8 +1412,9 @@ namespace SALO_Core.CodeBlocks
                 resString = "";
                 if (parent.addComments)
                 {
-                    resString += ";local " + variable.DataType.GetName() + " variable " 
-                        + variable.Data + AST_Program.separator_line;
+                    resString += ";local " + variable.DataType.GetName() + 
+                        " variable " + variable.Data + 
+                        " at " + locals[locals.Count - 1].ConvertToString() + AST_Program.separator_line;
                 }
             }
             private Variable ParseExpression(AST_Expression input, out string resString)

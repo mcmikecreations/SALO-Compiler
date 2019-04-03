@@ -122,8 +122,8 @@ namespace SALO_Core.CodeBlocks.Expressions
                     }
                 }
                 if (!opRightFilled && !opLeftFilled) continue;
-                if (input.Count - opIndexesRight[opRight] - 1 < 
-                    (opIndexesLeft[opLeft] == -1 ? input.Count : opIndexesLeft[opLeft]) && 
+                if (input.Count - opIndexesRight[opRight] - 1 <
+                    (opIndexesLeft[opLeft] == -1 ? input.Count : opIndexesLeft[opLeft]) &&
                     (opRightFilled || !opLeftFilled))
                 {
                     op = opRight;
@@ -293,6 +293,13 @@ namespace SALO_Core.CodeBlocks.Expressions
                             //Prefix at the end - false match
                             continue;
                         }
+                        if (opIndexes[op] >= 1 &&
+                            !((input[opIndexes[op] - 1].isString && isOperation(input[opIndexes[op] - 1].inStrg))/* ||
+                            (!input[opIndexes[op] - 1].isString && isOperation(input[opIndexes[op] - 1].inNode))*/))
+                        {
+                            //It is not actually prefix
+                            continue;
+                        }
                         //We have a prefix operation
                         if (ops[op].operandCount == 0) throw new AST_BadFormatException(
                             "Compiler error - Found a 0-operand operator in a non-0-operand input",
@@ -371,6 +378,13 @@ namespace SALO_Core.CodeBlocks.Expressions
                         if (opIndexes[op] == 0)
                         {
                             //Suffix at the start - false match
+                            continue;
+                        }
+                        if (opIndexes[op] < input.Count - 1 &&
+                            !((input[opIndexes[op] + 1].isString && isOperation(input[opIndexes[op] + 1].inStrg))/* ||
+                            (!input[opIndexes[op] + 1].isString && isOperation(input[opIndexes[op] + 1].inNode))*/))
+                        {
+                            //It is not actually prefix
                             continue;
                         }
                         //We have a suffix operation

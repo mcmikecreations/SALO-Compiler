@@ -1,4 +1,4 @@
-їнасипати "errors.sut"
+їнасипати "converts.sut"
 
 їякщо lang_sut == 1
 їінакше

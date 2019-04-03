@@ -98,6 +98,10 @@
 			"translated" : "if"
 		},
 		{
+			"locale" : "інакше",
+			"translated" : "else"
+		},
+		{
 			"locale" : "поки",
 			"translated" : "while"
 		},
@@ -131,7 +135,7 @@
 		},
 		{
 			"locale" : "стрічка",
-			"translated" : "int8_ptr"
+			"translated" : "lpcstr"
 		},
 		{
 			"locale" : "дріб",

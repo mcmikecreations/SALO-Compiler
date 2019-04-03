@@ -77,7 +77,7 @@
 				[
 					{
 						"name" : "val",
-						"type" : "int8_ptr"
+						"type" : "lpcstr"
 					},
 					{
 						"name" : "val",
@@ -95,7 +95,7 @@
 				[
 					{
 						"name" : "val",
-						"type" : "int8_ptr"
+						"type" : "lpcstr"
 					},
 					{
 						"name" : "val",
@@ -113,7 +113,7 @@
 				[
 					{
 						"name" : "val",
-						"type" : "int8_ptr"
+						"type" : "lpcstr"
 					}
 				]
 			}

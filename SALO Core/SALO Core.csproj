@@ -50,7 +50,8 @@
     <Compile Include="AST\AST_Expression.cs" />
     <Compile Include="AST\AST_Function.cs" />
     <Compile Include="AST\AST_Include.cs" />
-    <Compile Include="AST\AST_LocalVariable.cs" />
+    <Compile Include="AST\Data\AST_LocalVariable.cs" />
+    <Compile Include="AST\AST_Structure.cs" />
     <Compile Include="AST\Logic\AST_For.cs" />
     <Compile Include="AST\Logic\AST_If.cs" />
     <Compile Include="AST\Logic\AST_Logic.cs" />

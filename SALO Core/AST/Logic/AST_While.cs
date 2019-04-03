@@ -1,4 +1,5 @@
-﻿using SALO_Core.Exceptions;
+﻿using SALO_Core.AST.Data;
+using SALO_Core.Exceptions;
 using SALO_Core.Exceptions.ASS;
 using System;
 using System.Collections.Generic;
@@ -27,7 +28,7 @@ namespace SALO_Core.AST.Logic
             }
             if (input[insideIndexStart] != '(')
             {
-                throw new ASS_Exception("Failed to find conditional expression inside while", charIndex + insideIndexStart);
+                throw new AST_BadFormatException("Failed to find conditional expression inside while", charIndex + insideIndexStart);
             }
 
             Stack<string> brackets = new Stack<string>();
@@ -49,15 +50,15 @@ namespace SALO_Core.AST.Logic
                     }
                     else
                     {
-                        throw new ASS_Exception("Failed to parse conditional expression inside while",
-                            new ASS_Exception("Encountered unexpected tokens in bracket stack",
+                        throw new AST_BadFormatException("Failed to parse conditional expression inside while",
+                            new AST_BadFormatException("Encountered unexpected tokens in bracket stack",
                             charIndex + insideIndexEnd), charIndex + insideIndexEnd);
                     }
                 }
                 else insideIndexEnd++;
                 if (input.Length <= insideIndexEnd)
                 {
-                    throw new ASS_Exception("Reached end of input while parsing while brackets",
+                    throw new AST_BadFormatException("Reached end of input while parsing while brackets",
                         charIndex + insideIndexEnd);
                 }
             }
@@ -72,7 +73,7 @@ namespace SALO_Core.AST.Logic
             if (input.IndexOf("does", localInput) != localInput)
             {
                 //We failed to find if body
-                throw new ASS_Exception("Conditional statement body was not found", charIndex + localInput);
+                throw new AST_BadFormatException("Conditional statement body was not found", charIndex + localInput);
             }
             Stack<string> codeSegments = new Stack<string>();
             codeSegments.Push("does");
@@ -88,8 +89,8 @@ namespace SALO_Core.AST.Logic
                 {
                     if (codeSegments.Peek() != "does")
                     {
-                        throw new ASS_Exception("Failed to parse conditional expression inside while",
-                            new ASS_Exception("Encountered unexpected tokens in bracket stack",
+                        throw new AST_BadFormatException("Failed to parse conditional expression inside while",
+                            new AST_BadFormatException("Encountered unexpected tokens in bracket stack",
                             charIndex + localInput), charIndex + localInput);
                     }
                     codeSegments.Pop();
@@ -97,7 +98,7 @@ namespace SALO_Core.AST.Logic
                 localInput++;
                 if (input.Length <= localInput && codeSegments.Count > 0)
                 {
-                    throw new ASS_Exception("Reached end of input while parsing while body",
+                    throw new AST_BadFormatException("Reached end of input while parsing while body",
                         charIndex + localInput);
                 }
             }
@@ -105,7 +106,7 @@ namespace SALO_Core.AST.Logic
             string codeBody = input.Substring(codeSegmentStart + "does".Length, localInput
                 - 1 - "does".Length - codeSegmentStart);
 
-            string[] exps = AST_Function.Split(codeBody, charIndex);
+            string[] exps = AST_Function.Split(codeBody, charIndex + codeSegmentStart + "does".Length);
             if (exps.Length > 0)
             {
                 expressions = new LinkedList<AST_Expression>();
