@@ -230,7 +230,7 @@ namespace SALO_Core.AST
                 {
                     ch.Value.Print(indent, ch.Next == null, ref output);
                 }
-                throw new AST_Exception("Function child nodes are not null, although it doesn't use them", -1);
+                throw new AST_Exception("Expression child nodes are not null, although it doesn't use them", -1);
             }
         }
 		public AST_Expression(AST_Node parent, string input, int charIndex) : base(parent, input, charIndex)

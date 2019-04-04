@@ -50,6 +50,7 @@
     <Compile Include="AST\AST_Expression.cs" />
     <Compile Include="AST\AST_Function.cs" />
     <Compile Include="AST\AST_Include.cs" />
+    <Compile Include="AST\Data\AST_GlobalVariable.cs" />
     <Compile Include="AST\Data\AST_LocalVariable.cs" />
     <Compile Include="AST\AST_Structure.cs" />
     <Compile Include="AST\Logic\AST_For.cs" />
@@ -84,6 +85,7 @@
     <Compile Include="CodeBlocks\ParameterTypes\PT_Lpcstr.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_None.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Ptr.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\PT_Struct.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Void.cs" />
     <Compile Include="Exceptions\ASS\ASS_Exception.cs" />
     <Compile Include="Exceptions\ASS\ASS_WrongNodeException.cs" />

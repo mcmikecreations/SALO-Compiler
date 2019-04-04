@@ -33,6 +33,20 @@ namespace SALO_Core.CodeBlocks
                             innerParameterType = GetParameterType(input.Remove(input.Length - "_ptr".Length))
                         };
                     }
+                    else if (input.EndsWith("_struct"))
+                    {
+                        var ast_structure = Builders.Builder_AST.structures.Find(
+                            a => a.name == input.Remove(input.Length - "_struct".Length));
+                        if (ast_structure == null)
+                            throw new Exceptions.AST_BadFormatException(
+                                "Structure " + input.Remove(input.Length - "_struct".Length) + " is not found",
+                                -1);
+                        return new PT_Struct()
+                        {
+                            children = ast_structure.variables.Select(a => a.DataType).ToList(),
+                            name = ast_structure.name,
+                        };
+                    }
                     throw new NotImplementedException(input + " is not yet supported");
             }
         }

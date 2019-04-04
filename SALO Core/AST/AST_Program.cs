@@ -159,16 +159,37 @@ namespace SALO_Core.AST
                             int end = input.IndexOf(structend, k);
                             if (end == -1)
                             {
-                                throw new AST_BadFormatException("Failed to find a corresponding end to function start",
-                                            new FormatException("No corresponding ends for function " + nm), charIndex + input.Length - 1);
+                                throw new AST_BadFormatException("Failed to find a corresponding end to structure start",
+                                            new FormatException("No corresponding ends for structure " + nm), charIndex + input.Length - 1);
                             }
+                            string structure = input.Substring(i, end - i - 1);
+                            childNodes.AddLast(new AST_Structure(this, structure, i));
+                            Builders.Builder_AST.structures.Add((AST_Structure)childNodes.Last.Value);
                             end += structend.Length;
-                            string structure = input.Substring(i, end - i);
-                            childNodes.AddLast(new AST_Function(this, structure, i));
                             i = end;
                             continue;
                         }
-						else throw new AST_BadFormatException("Failed to parse input", charIndex + j);
+                        else if (input.IndexOf("global", j) == j)
+                        {
+                            int k = j + "global".Length + 1;
+
+                            if (k >= input.Length)
+                                throw new AST_BadFormatException("Failed to parse global name",
+                                            new ArgumentOutOfRangeException("input", "Reached the end of input"), charIndex + input.Length - 1);
+                            string structend = ";";
+                            int end = input.IndexOf(structend, k);
+                            if (end == -1)
+                            {
+                                throw new AST_BadFormatException("Failed to find a corresponding end to global start",
+                                            new FormatException("No corresponding end-of-line for global"), charIndex + input.Length - 1);
+                            }
+                            string structure = input.Substring(i, end - i - 1);
+                            childNodes.AddLast(new Data.AST_GlobalVariable(this, structure, i));
+                            end += structend.Length;
+                            i = end;
+                            continue;
+                        }
+                        else throw new AST_BadFormatException("Failed to parse input", charIndex + j);
 						//TODO - do checks for variables
 					}
 

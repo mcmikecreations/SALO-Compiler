@@ -93,6 +93,8 @@ namespace SALO_Core.Builders
         private string IncludeCode(string input, string path)
         {
             input = input.Replace("function ", "\"" + path + "\" function ");
+            input = input.Replace("structure ", "\"" + path + "\" structure ");
+            input = input.Replace("global ", "\"" + path + "\" global ");
             //Parse includes
             int pos = input.IndexOf("#include");
             while (pos != -1)

@@ -23,6 +23,14 @@ namespace SALO_Core.CodeBlocks
         {
             return Result;
         }
+        public override void Parse(AST_GlobalVariable input)
+        {
+            throw new NotImplementedException();
+        }
+        public override void Parse(AST_Structure input)
+        {
+            throw new NotImplementedException();
+        }
 
         public override void Parse(AST_Program input)
         {

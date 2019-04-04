@@ -78,6 +78,14 @@
 			"translated" : "private"
 		},
 		{
+			"locale" : "таріль",
+			"translated" : "structure"
+		},
+		{
+			"locale" : "загал",
+			"translated" : "global"
+		},
+		{
 			"locale" : "шматок",
 			"translated" : "function"
 		},

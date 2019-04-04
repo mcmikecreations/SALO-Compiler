@@ -29,7 +29,14 @@ namespace SALO_Core.AST.Data
             }
             catch (Exception e)
             {
-                throw new AST_BadFormatException("Format " + vars[0] + " is not supported", e, charIndex);
+                var ast_structure = Builders.Builder_AST.structures.Find(a => a.name == vars[0]);
+                if (ast_structure == null)
+                    throw new AST_BadFormatException("Format " + vars[0] + " is not supported", e, charIndex);
+                dataType = new CodeBlocks.PT_Struct()
+                {
+                    children = ast_structure.variables.Select(a => a.dataType).ToList(),
+                    name = ast_structure.name,
+                };
             }
 			if(vars.Length == 2)
 			{

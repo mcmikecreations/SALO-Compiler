@@ -18,7 +18,10 @@ namespace SALO_Core.CodeBlocks
 		public abstract void Parse(AST_Directive input);
 		public abstract void Parse(AST_Include input);
 		public abstract void Parse(AST_Define input);
-		public abstract void Parse(AST_Function input);
+        public abstract void Parse(AST.Data.AST_GlobalVariable input);
+        public abstract void Parse(AST_Structure input);
+
+        public abstract void Parse(AST_Function input);
 		public abstract void Parse(AST_Expression input);
         public abstract void Parse(Exp_Statement exp);
         public abstract void Parse(Exp_Node node);

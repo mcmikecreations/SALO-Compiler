@@ -11,6 +11,7 @@ namespace SALO_Core.Builders
 {
 	public class Builder_AST
 	{
+        public static List<AST_Structure> structures = new List<AST_Structure>();
 		protected AST_Node head;
 		public void Print(ref string output)
 		{

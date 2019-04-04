@@ -10,7 +10,8 @@ namespace SALO_Core.CodeBlocks
     {
         public bool Equals(IParameterType other)
         {
-            return (GetLengthInBytes() == other.GetLengthInBytes() &&
+            return (other is PT_Int32 &&
+                    GetLengthInBytes() == other.GetLengthInBytes() &&
                     GetName() == other.GetName());
         }
         public int GetLengthInBytes()

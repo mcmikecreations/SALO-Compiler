@@ -34,6 +34,10 @@ namespace SALO_Core.CodeBlocks
             {
                 return "db";
             }
+            else if (parameterType is PT_Struct)
+            {
+                return ((PT_Struct)parameterType).name;
+            }
             else
             {
                 throw new ASS_Exception("Error converting parameter type to an assembler label",
@@ -100,11 +104,12 @@ namespace SALO_Core.CodeBlocks
         }
         protected class Data : Section<Variable>
         {
+            public List<Structure> structures;
             public Data(string attributes) : base(attributes)
             {
-
+                structures = new List<Structure>();
             }
-            public Data() : base("data readable writeable")
+            public Data() : this("data readable writeable")
             {
 
             }
@@ -242,9 +247,13 @@ namespace SALO_Core.CodeBlocks
             public override string ConvertToString()
             {
                 string result = "";
-                if (values.Count > 0)
+                if ((values != null && values.Count > 0) || (structures != null && structures.Count > 0))
                 {
                     result += "section \'.data\' " + attributes + AST_Program.separator_line;
+                }
+                foreach(var s in structures)
+                {
+                    result += s.ConvertToString();
                 }
                 foreach (var t in values)
                 {
@@ -265,7 +274,7 @@ namespace SALO_Core.CodeBlocks
             {
 
             }
-            public IData() : base("data import readable")
+            public IData() : this("data import readable")
             {
 
             }
@@ -327,7 +336,7 @@ namespace SALO_Core.CodeBlocks
             {
 
             }
-            public Code() : base("code readable executable")
+            public Code() : this("code readable executable")
             {
 
             }
@@ -422,6 +431,22 @@ namespace SALO_Core.CodeBlocks
             }
         }
 
+        public override void Parse(AST_GlobalVariable input)
+        {
+            sec3.AddValue(new Variable(
+                new AST_Variable(input, input.variable.DataType.GetName(), 
+                    input.variable.DataType is PT_Struct ? "" : "?"), 
+                input.variable.DataType, 
+                new Address(input.variable.Data, -3)
+                ));
+        }
+
+        public override void Parse(AST_Structure input)
+        {
+            Structure structure = new Structure(input);
+            sec3.structures.Add(structure);
+        }
+
         public override void Parse(AST_Comment input)
         {
             foreach (string s in input.text)
@@ -450,6 +475,35 @@ namespace SALO_Core.CodeBlocks
             if (input.token == null)
                 throw new NotImplementedException();
             sec1.AddValue(input.identifier + " equ " + input.token);
+        }
+        public class Structure
+        {
+            public AST_Structure ast_Base { get; protected set; }
+            public List<Variable> variables;
+            public Structure(AST_Structure ast_Base)
+            {
+                this.ast_Base = ast_Base;
+                variables = new List<Variable>();
+                foreach(AST_Variable variable in ast_Base.variables)
+                {
+                    Variable cb_var = new Variable(
+                        variable, variable.DataType, new Address(variable.Data, -3));
+                    variables.Add(cb_var);
+                }
+            }
+            public string ConvertToString()
+            {
+                string result = "";
+                result += "struct " + ast_Base.name + AST_Program.separator_line;
+                foreach(var v in variables)
+                {
+                    result += "\t" + v.address.address + 
+                        " " + CB_Assembler_New.ToDataTypeLabel(v.dataType) + 
+                        " ?" + AST_Program.separator_line;
+                }
+                result += "ends" + AST_Program.separator_line;
+                return result;
+            }
         }
         public class Address
         {
@@ -503,6 +557,7 @@ namespace SALO_Core.CodeBlocks
                             //eax -> ax -> a -> al
                             return address.Remove(0, 1).Remove(1) + "l";
                         }
+                        if (offset == 0) return "byte ptr " + address;
                         return "byte ptr " + address +  (offset < 0 ? "-" + (-offset).ToString() :
                             "+" + offset.ToString());
                     case 2:
@@ -510,9 +565,11 @@ namespace SALO_Core.CodeBlocks
                         {
                             return address.Remove(0, 1);
                         }
+                        if (offset == 0) return "word ptr " + address;
                         return "word ptr " + address + (offset < 0 ? "-" + (-offset).ToString() :
                             "+" + offset.ToString());
                     default:
+                        if (offset == 0) return "dword ptr " + address;
                         return "dword ptr " + address + (offset < 0 ? "-" + (-offset).ToString() :
                             "+" + offset.ToString());
                 }
@@ -566,6 +623,10 @@ namespace SALO_Core.CodeBlocks
             public string ConvertToString()
             {
                 if(address.length == -1 && address.IsRegister() && dataType.GetLengthInBytes() != 4)
+                {
+                    return address.GetPtr(dataType.GetLengthInBytes());
+                }
+                else if (address.length == -3 && !(dataType is PT_Lpcstr))
                 {
                     return address.GetPtr(dataType.GetLengthInBytes());
                 }
@@ -688,7 +749,7 @@ namespace SALO_Core.CodeBlocks
                     return new Variable(null, dataType, new Address(reg, -1));
                 }
                 else throw new NotImplementedException(
-                    dataType.ToString() + " is not yet supported for registry assignment");
+                    dataType.ToString() + " is not yet supported for register assignment");
             }
             public void SetFreeAddress(Variable oldVariable)
             {
@@ -1576,7 +1637,7 @@ namespace SALO_Core.CodeBlocks
                         leftOutVar = ParseExpNode(exp, input.left, out leftOutStr);
                         result += leftOutStr;
 
-                        if (leftOutVar.address.IsConstant() || leftOutVar.address.IsGlobalVariableLabel() ||
+                        if (leftOutVar.address.IsConstant()/* || leftOutVar.address.IsGlobalVariableLabel()*/ ||
                             (leftOutVar.address.IsStack() && 
                             (!input.exp_Operator.init || input.exp_Operator.oper !=  "=") &&
                             ((input.right.exp_Operator.init == true && input.right.exp_Operator.oper != "=") 
@@ -1603,10 +1664,10 @@ namespace SALO_Core.CodeBlocks
 
                         Variable rightOutVar = null;
                         string rightOutStr = "";
-                        if ((input.right.exp_Type == Exp_Type.Operator && input.right.exp_Operator.init &&
+                        /*if ((input.right.exp_Type == Exp_Type.Operator && input.right.exp_Operator.init &&
                             input.right.exp_Operator.layer < input.exp_Operator.layer) ||
                             input.right.exp_Type == Exp_Type.Function ||
-                            true)
+                            true)*/
                         {
                             rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
                         }

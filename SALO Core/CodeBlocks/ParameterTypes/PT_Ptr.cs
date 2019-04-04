@@ -11,7 +11,8 @@ namespace SALO_Core.CodeBlocks
         public IParameterType innerParameterType { get; set; }
         public bool Equals(IParameterType other)
         {
-            return (GetLengthInBytes() == other.GetLengthInBytes() &&
+            return (other is PT_Ptr &&
+                    GetLengthInBytes() == other.GetLengthInBytes() &&
                     GetName() == other.GetName());
         }
         public int GetLengthInBytes()
