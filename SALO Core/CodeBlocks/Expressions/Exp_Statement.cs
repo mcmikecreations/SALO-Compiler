@@ -13,6 +13,25 @@ namespace SALO_Core.CodeBlocks.Expressions
     {
         protected List<string> items;
         public Exp_Node head { get; protected set; }
+        public Exp_Node FindParent(Exp_Node node)
+        {
+            return FindParent(node, head);
+        }
+        public Exp_Node FindParent(Exp_Node node, Exp_Node parent)
+        {
+            if (parent != null)
+            {
+                if (parent.left == node) return parent;
+                if (parent.right == node) return parent;
+                Exp_Node leftResult = null, rightResult = null;
+                leftResult = FindParent(node, parent.left);
+                rightResult = FindParent(node, parent.right);
+                if (leftResult != null) return leftResult;
+                if (rightResult != null) return rightResult;
+                return null;
+            }
+            else return null;
+        }
         public Exp_Statement(List<string> list)
         {
             items = list;

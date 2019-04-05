@@ -480,6 +480,7 @@ namespace SALO_Core.CodeBlocks
         {
             public AST_Structure ast_Base { get; protected set; }
             public List<Variable> variables;
+            public PT_Struct ast_Type { get; protected set; }
             public Structure(AST_Structure ast_Base)
             {
                 this.ast_Base = ast_Base;
@@ -490,6 +491,12 @@ namespace SALO_Core.CodeBlocks
                         variable, variable.DataType, new Address(variable.Data, -3));
                     variables.Add(cb_var);
                 }
+                ast_Type = new PT_Struct()
+                {
+                    name = ast_Base.name,
+                    children = variables.Select(a => a.dataType).ToList(),
+                    childNames = variables.Select(a => a.address.address).ToList()
+                };
             }
             public string ConvertToString()
             {
@@ -504,15 +511,33 @@ namespace SALO_Core.CodeBlocks
                 result += "ends" + AST_Program.separator_line;
                 return result;
             }
+            public int GetMemberOffset(Variable variable)
+            {
+                int res = 0;
+                int index = 0;
+                while (index < variables.Count && variables[index] != variable)
+                {
+                    res += variables[index].dataType.GetLengthInBytes();
+                    index++;
+                }
+                if (index >= variables.Count)
+                    throw new ASS_Exception("Couldn\'t find variable " + variable.ConvertToString(), -1);
+                return res;
+            }
+            public Variable FindByName(string varName)
+            {
+                return variables.Find(a => a.address.address == varName);
+            }
         }
         public class Address
         {
             public string address;
             public int offset;
             /// <summary>
-            /// -1 for register, -2 for constant, -3 for global variable labels
+            /// -1 for register, -2 for constant, -3 for global variable , -4 for function labels
             /// </summary>
             public int length;
+            public bool isStructure = false;
             public Address(string baseAddress)
             {
                 this.address = baseAddress;
@@ -537,6 +562,10 @@ namespace SALO_Core.CodeBlocks
             {
                 return new Address(baseAddress.address, length, baseAddress.offset + GetLength(length));
             }
+            public static Address Advance(Address baseAddress, int length)
+            {
+                return new Address(baseAddress.address, length, baseAddress.offset + length);
+            }
             public string ConvertToString()
             {
                 return GetPtr(length);
@@ -545,6 +574,8 @@ namespace SALO_Core.CodeBlocks
             {
                 switch (length)
                 {
+                    case -4:
+                        return address;
                     case -3:
                         return address;
                     case -2:
@@ -802,12 +833,17 @@ namespace SALO_Core.CodeBlocks
                 {
                     return;
                 }
+                else if (oldVariable.address.length == -4)
+                {
+                    return;
+                }
                 else
                 {
                     //Check for function parameters
                     if (stack.Count == 0 &&
                         oldVariable.address.address == "ebp"/* &&
                         oldVariable.address.offset > 0*/) return;
+                    if (oldVariable.address.isStructure) return;
                     if (stack.Peek() != oldVariable)
                     {
                         throw new ASS_Exception("Memory manager stack corrupt", -1);
@@ -843,7 +879,7 @@ namespace SALO_Core.CodeBlocks
                 start = end = "";
 
                 int addr = 4;
-                for (int i = ast_function.parameters.Count - 1; i >= 0; --i)
+                for (int i = 0; i < ast_function.parameters.Count; ++i)
                 {
                     var p = ast_function.parameters.ElementAt(i);
                     addr += 4;// p.DataType.GetLengthInBytes();
@@ -1008,7 +1044,7 @@ namespace SALO_Core.CodeBlocks
 
                             //Parse conditional expression
                             string conditionResultString = "";
-                            var conditionReturn = ParseLogicNode(statement.inside, exp.head,
+                            var conditionReturn = ParseLogicNode(statement.inside, exp, exp.head,
                                 out conditionResultString, restLabel);
                             memoryManager.SetFreeAddress(conditionReturn);
                             if (parent.addComments)
@@ -1057,7 +1093,7 @@ namespace SALO_Core.CodeBlocks
 
                             //Parse conditional expression
                             string conditionResultString = "";
-                            var conditionReturn = ParseLogicNode(statement.inside, exp.head,
+                            var conditionReturn = ParseLogicNode(statement.inside, exp, exp.head,
                                 out conditionResultString, elseLabel);
                             memoryManager.SetFreeAddress(conditionReturn);
                             if (parent.addComments)
@@ -1151,7 +1187,7 @@ namespace SALO_Core.CodeBlocks
 
                         //Parse conditional expression
                         string conditionResultString = "";
-                        var conditionReturn = ParseLogicNode(statement.inside, exp.head,
+                        var conditionReturn = ParseLogicNode(statement.inside, exp, exp.head,
                             out conditionResultString, restLabel);
                         memoryManager.SetFreeAddress(conditionReturn);
                         if (parent.addComments)
@@ -1220,7 +1256,7 @@ namespace SALO_Core.CodeBlocks
 
                         //Parse conditional expression
                         string conditionResultString = "";
-                        var conditionReturn = ParseLogicNode(statement.condition, exp.head,
+                        var conditionReturn = ParseLogicNode(statement.condition, exp, exp.head,
                             out conditionResultString, restLabel);
                         memoryManager.SetFreeAddress(conditionReturn);
                         if (parent.addComments)
@@ -1322,7 +1358,8 @@ namespace SALO_Core.CodeBlocks
                 }
                 return false;
             }
-            private Variable ParseLogicNode(AST_Expression exp, Exp_Node input, out string resString, string endLabel)
+            private Variable ParseLogicNode(AST_Expression exp, Exp_Statement statement, 
+                Exp_Node input, out string resString, string endLabel)
             {
                 string result = "";
                 Variable res = null;
@@ -1336,7 +1373,7 @@ namespace SALO_Core.CodeBlocks
                     //Parse left, then right, then operator
                     string leftOutStr = "";
                     Variable leftOutVar = null;
-                    leftOutVar = ParseExpNode(exp, input.left, out leftOutStr);
+                    leftOutVar = ParseExpNode(exp, statement, input.left, out leftOutStr);
                     result += leftOutStr;
 
                     Variable rightOutVar = null;
@@ -1346,7 +1383,7 @@ namespace SALO_Core.CodeBlocks
                         input.right.exp_Type == Exp_Type.Function ||
                         true)
                     {
-                        rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
+                        rightOutVar = ParseExpNode(exp, statement, input.right, out rightOutStr);
                     }
                     if (leftOutVar.address.IsConstant() || leftOutVar.address.IsGlobalVariableLabel() ||
                         (leftOutVar.address.IsStack() &&
@@ -1435,7 +1472,7 @@ namespace SALO_Core.CodeBlocks
                 {
                     string leftOutStr = "";
                     Variable leftOutVar = null;
-                    leftOutVar = ParseExpNode(exp, input, out leftOutStr);
+                    leftOutVar = ParseExpNode(exp, statement, input, out leftOutStr);
                     result += leftOutStr;
                     //Compare to zero, jump if true
                     result += "\t   or\t" + leftOutVar.ConvertToString() +
@@ -1489,10 +1526,12 @@ namespace SALO_Core.CodeBlocks
 #endif
                 string tempResString = "";
                 if ((exp.head.exp_Type == Exp_Type.Operator && exp.head.exp_Operator.init &&
-                    (exp.head.exp_Data == "=" || exp.head.exp_Data == "return")) ||
+                    (exp.head.exp_Data == "=" || exp.head.exp_Data == "return" || 
+                    (exp.head.exp_Data == "." && exp.head.right.exp_Type == Exp_Type.Function)
+                    )) ||
                     (exp.head.exp_Type == Exp_Type.Function))
                 {
-                    var res = ParseExpNode(input, exp.head, out tempResString);
+                    var res = ParseExpNode(input, exp, exp.head, out tempResString);
                     resString = "";
                     if (parent.addComments)
                     {
@@ -1505,7 +1544,8 @@ namespace SALO_Core.CodeBlocks
                     new ASS_Exception("Statement should be assignment or a function call", -1), -1);
                 //return null;
             }
-            private Variable ParseExpNode(AST_Expression exp, Exp_Node input, out string resString)
+            private Variable ParseExpNode(AST_Expression exp, Exp_Statement statement, 
+                Exp_Node input, out string resString)
             {
                 string result = "";
                 Variable res = null;
@@ -1536,7 +1576,7 @@ namespace SALO_Core.CodeBlocks
                         {
                             string rightOutStr = "";
                             Variable rightOutVar = null;
-                            rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
+                            rightOutVar = ParseExpNode(exp, statement, input.right, out rightOutStr);
                             if (!rightOutVar.dataType.Equals(returnValue.DataType))
                             {
                                 throw new ASS_Exception("You\'re returning " + rightOutVar.dataType +
@@ -1568,7 +1608,7 @@ namespace SALO_Core.CodeBlocks
                         {
                             string rightOutStr = "";
                             Variable rightOutVar = null;
-                            rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
+                            rightOutVar = ParseExpNode(exp, statement, input.right, out rightOutStr);
                             result += rightOutStr;
 
                             if (input.exp_Data == "&")
@@ -1580,10 +1620,18 @@ namespace SALO_Core.CodeBlocks
                                 }
                                 Variable rightTempVar = memoryManager.GetFreeAddress(null,
                                     ParameterType.GetParameterType(rightOutVar.dataType.GetName() + "_ptr"));
-
-                                result += "\t  lea\t" + rightTempVar.ConvertToString() +
-                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                                memoryManager.SetFreeAddress(rightOutVar);
+                                if (rightOutVar.dataType is PT_Void)
+                                {
+                                    result += "\t  mov\t" + rightTempVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(rightOutVar);
+                                }
+                                else
+                                {
+                                    result += "\t  lea\t" + rightTempVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(rightOutVar);
+                                }
 
                                 res = rightTempVar;
                             }
@@ -1626,209 +1674,264 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (input.left != null && input.right != null)
                     {
-                        if(input.exp_Operator.init && input.exp_Operator.oper == "=" && 
-                            input.left.exp_Type != Exp_Type.Variable)
+                        if(input.exp_Type == Exp_Type.Operator && input.exp_Data == ".")
                         {
-                            throw new ASS_Exception("Can\'t parse expression because lValue is not a variable", -1);
-                        }
-                        //Parse left, then right, then operator
-                        string leftOutStr = "";
-                        Variable leftOutVar = null;
-                        leftOutVar = ParseExpNode(exp, input.left, out leftOutStr);
-                        result += leftOutStr;
-
-                        if (leftOutVar.address.IsConstant()/* || leftOutVar.address.IsGlobalVariableLabel()*/ ||
-                            (leftOutVar.address.IsStack() && 
-                            (!input.exp_Operator.init || input.exp_Operator.oper !=  "=") &&
-                            ((input.right.exp_Operator.init == true && input.right.exp_Operator.oper != "=") 
-                            /* TODO - check if right is on stack */ || input.exp_Data != "=")))
-                        {
-                            //We have to move our expression result to a register
-                            Variable leftTempVar = leftOutVar;
-                            if(input.exp_Type == Exp_Type.Operator && input.exp_Operator.init &&
-                                input.exp_Operator.oper == "/")
-                            {
-                                //It's an operator that requires eax
-                                leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
-                                memoryManager.UpdateRegisterUsage(leftOutVar);
-                            }
-                            else
-                            {
-                                leftOutVar = memoryManager.GetFreeRegister(leftTempVar.dataType);
-                            }
-                            //memoryManager.UpdateRegisterUsage(leftOutVar);
-                            result += "\t  mov\t" + leftOutVar.ConvertToString() +
-                                ",\t" + leftTempVar.ConvertToString() + AST_Program.separator_line;
-                            memoryManager.SetFreeAddress(leftTempVar);
-                        }
-
-                        Variable rightOutVar = null;
-                        string rightOutStr = "";
-                        /*if ((input.right.exp_Type == Exp_Type.Operator && input.right.exp_Operator.init &&
-                            input.right.exp_Operator.layer < input.exp_Operator.layer) ||
-                            input.right.exp_Type == Exp_Type.Function ||
-                            true)*/
-                        {
-                            rightOutVar = ParseExpNode(exp, input.right, out rightOutStr);
-                        }
-                        result += rightOutStr;
-                        //For constants, we can assign them to different int sizes
-                        if (rightOutVar.address.length == -2 &&
-                            leftOutVar.dataType.GetName().StartsWith("int") &&
-                            rightOutVar.dataType.GetName().StartsWith("int") &&
-                            !leftOutVar.dataType.GetName().EndsWith("_ptr") &&
-                            !rightOutVar.dataType.GetName().EndsWith("_ptr"))
-                        {
-                            rightOutVar.dataType = leftOutVar.dataType;
-                        }
-                        if (!leftOutVar.dataType.Equals(rightOutVar.dataType))
-                        {
-                            throw new NotImplementedException("Can\'t perform " + input.exp_Data +
-                                " on " + leftOutVar.dataType + " and " + rightOutVar.dataType);
-                        }
-
-                        if (input.exp_Data == "+")
-                        {
-                            result += "\t  add\t" + leftOutVar.ConvertToString() +
-                                ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                            res = leftOutVar;
-                            memoryManager.SetFreeAddress(rightOutVar);
-                        }
-                        else if (input.exp_Data == "-")
-                        {
-                            result += "\t  sub\t" + leftOutVar.ConvertToString() +
-                                ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                            res = leftOutVar;
-                            memoryManager.SetFreeAddress(rightOutVar);
-                        }
-                        else if (input.exp_Data == "*")
-                        {
-                            result += "\t imul\t" + leftOutVar.ConvertToString() +
-                                ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                            res = leftOutVar;
-                            memoryManager.SetFreeAddress(rightOutVar);
-                        }
-                        else if (input.exp_Data == "/")
-                        {
-                            bool popAX = false;
-                            if(leftOutVar.address.address != "eax")
-                            {
-                                if (memoryManager.IsTaken("eax"))
-                                {
-                                    popAX = true;
-                                    result += "\t push\teax" + AST_Program.separator_line;
-                                }
-
-                                //It's an operator that requires eax, MOV it there
-                                result += "\t  mov\teax,\t" + leftOutVar.ConvertToString() +
-                                    AST_Program.separator_line;
-                                memoryManager.SetFreeAddress(leftOutVar);
-                                leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
-                                memoryManager.UpdateRegisterUsage(leftOutVar);
-                            }
-
-                            if (rightOutVar.address.length == -2 || rightOutVar.address.address == "edx")
-                            {
-                                //We have a constant, move to ebx or ecx
-                                var tempRightOutVar = rightOutVar;
-                                rightOutVar = memoryManager.GetFreeRegister(tempRightOutVar.dataType);
-                                result += "\t  mov\t" + rightOutVar.ConvertToString() +
-                                    ",\t" + tempRightOutVar.ConvertToString() + AST_Program.separator_line;
-                                memoryManager.SetFreeAddress(tempRightOutVar);
-                            }
-
-                            //Now left variable is in eax
-                            //Push edx in case something uses it
-                            result += "\t push\tedx" + AST_Program.separator_line;
-                            //Zero-out EDX
-                            result += "\t  xor\tedx,\tedx" + AST_Program.separator_line;
-                            //memoryManager.usesDX = true;
-                            result += "\t idiv\t" + rightOutVar.ConvertToString() + 
-                                AST_Program.separator_line;
-                            memoryManager.SetFreeAddress(rightOutVar);
-                            //Pop edx in case something uses it
-                            result += "\t  pop\tedx" + AST_Program.separator_line;
-                            //EAX has the result
-                            if (popAX)
-                            {
-                                res = memoryManager.GetFreeRegister(leftOutVar.dataType);
-                                //We know for a fact that left operand is in eax
-                                memoryManager.SetFreeAddress(leftOutVar);
-                                result += "\t  mov\t" + res.ConvertToString() +
-                                    ",\teax" + AST_Program.separator_line;
-                                result += "\t  pop\teax" + AST_Program.separator_line;
-                            }
-                            else
-                            {
-                                //We just roll with eax
-                                res = leftOutVar;
-                            }
-                        }
-                        else if (input.exp_Data == "%")
-                        {
-                            bool popAX = false;
-                            if (leftOutVar.address.address != "eax")
-                            {
-                                if (memoryManager.IsTaken("eax"))
-                                {
-                                    popAX = true;
-                                    result += "\t push\teax" + AST_Program.separator_line;
-                                }
-
-                                //It's an operator that requires eax, MOV it there
-                                result += "\t  mov\teax,\t" + leftOutVar.ConvertToString() +
-                                    AST_Program.separator_line;
-                                memoryManager.SetFreeAddress(leftOutVar);
-                                leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
-                                memoryManager.UpdateRegisterUsage(leftOutVar);
-                            }
-
-                            if (rightOutVar.address.length == -2 || rightOutVar.address.address == "edx")
-                            {
-                                //We have a constant, move to ebx or ecx
-                                var tempRightOutVar = rightOutVar;
-                                rightOutVar = memoryManager.GetFreeRegister(tempRightOutVar.dataType);
-                                result += "\t  mov\t" + rightOutVar.ConvertToString() +
-                                    ",\t" + tempRightOutVar.ConvertToString() + AST_Program.separator_line;
-                                memoryManager.SetFreeAddress(tempRightOutVar);
-                            }
-
-                            //Now left variable is in eax
-                            //Push edx in case something uses it
-                            result += "\t push\tedx" + AST_Program.separator_line;
-                            //Zero-out EDX
-                            result += "\t  xor\tedx,\tedx" + AST_Program.separator_line;
-                            //memoryManager.usesDX = true;
-                            result += "\t idiv\t" + rightOutVar.ConvertToString() +
-                                AST_Program.separator_line;
-                            memoryManager.SetFreeAddress(rightOutVar);
-                            //Result is in edx, MOV it somewhere
-                            var tempLeftOutVar = memoryManager.GetFreeRegister(leftOutVar.dataType);
-                            result += "\t  mov\t" + tempLeftOutVar.ConvertToString() +
-                                ",\tedx" + AST_Program.separator_line;
-                            res = tempLeftOutVar;
+                            //Firstly parse only for type checking
+                            string leftOutStr = "";
+                            Variable leftOutVar = null;
+                            leftOutVar = ParseExpNode(exp, statement, input.left, out leftOutStr);
                             memoryManager.SetFreeAddress(leftOutVar);
-                            //Pop edx in case something uses it
-                            result += "\t  pop\tedx" + AST_Program.separator_line;
-                            //EAX has the result
-                            if (popAX)
+                            //result += leftOutStr;
+
+                            if(leftOutVar.dataType is PT_Struct)
                             {
-                                result += "\t  pop\teax" + AST_Program.separator_line;
+                                if(input.right.exp_Type != Exp_Type.Variable)
+                                {
+                                    throw new ASS_Exception("Structure member should be a variable", -1);
+                                }
+                                //Parse structure member access
+                                PT_Struct leftType = (PT_Struct)leftOutVar.dataType;
+                                Structure structure = parent.sec3.structures.Find(
+                                    a => a.ast_Type.Equals(leftType));
+                                if (structure == null)
+                                {
+                                    throw new ASS_Exception("Couldn\'t find a struct with such parameter", -1);
+                                }
+
+                                leftOutVar = ParseExpNode(exp, statement, input.left, out leftOutStr);
+                                memoryManager.SetFreeAddress(leftOutVar);
+                                result += leftOutStr;
+                                var rightOutVar = structure.FindByName(input.right.exp_Data);
+                                Address newAddr = Address.Advance(
+                                        leftOutVar.address, structure.GetMemberOffset(rightOutVar));
+                                newAddr.isStructure = true;
+                                res = new Variable(null, rightOutVar.dataType, newAddr);
+                            }
+                            else
+                            {
+                                //Parse single-parameter function call
+                                if (input.right.exp_Type == Exp_Type.Function)
+                                {
+                                    Exp_Node injected = InjectParameterInFunction(statement, input.left, input.right);
+                                    string injectedStr = "";
+                                    res = ParseExpNode(exp, statement, injected, out injectedStr);
+                                    result += injectedStr;
+                                }
+                                else
+                                {
+                                    throw new ASS_Exception("Can\'t use dot operator for " + input.right.exp_Data, -1);
+                                }
                             }
                         }
-                        else if (input.exp_Data == "=")
+                        else
                         {
-                            if (input.left.exp_Type != Exp_Type.Variable)
+                            if (input.exp_Operator.init && input.exp_Operator.oper == "=" &&
+                                input.left.exp_Type != Exp_Type.Variable && !
+                                (input.left.exp_Type == Exp_Type.Operator && input.left.exp_Operator.oper == "."))
                             {
-                                throw new ASS_Exception("Can\'t assign to " + input.left.exp_Type.ToString(),
-                                    new ASS_Exception("Assignment is supported only for variables", -1), -1);
+                                throw new ASS_Exception(
+                                    "Can\'t parse expression because lValue is not a variable", -1);
                             }
-                            result += "\t  mov\t" + leftOutVar.ConvertToString() +
-                                ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                            res = leftOutVar;
-                            memoryManager.SetFreeAddress(rightOutVar);
+                            //Parse left, then right, then operator
+                            string leftOutStr = "";
+                            Variable leftOutVar = null;
+                            leftOutVar = ParseExpNode(exp, statement, input.left, out leftOutStr);
+                            result += leftOutStr;
+
+                            if (leftOutVar.address.IsConstant()/* || leftOutVar.address.IsGlobalVariableLabel()*/ ||
+                                (leftOutVar.address.IsStack() &&
+                                (!input.exp_Operator.init || input.exp_Operator.oper != "=") &&
+                                ((input.right.exp_Operator.init == true && input.right.exp_Operator.oper != "=")
+                                /* TODO - check if right is on stack */ || input.exp_Data != "=")))
+                            {
+                                //We have to move our expression result to a register
+                                Variable leftTempVar = leftOutVar;
+                                if (input.exp_Type == Exp_Type.Operator && input.exp_Operator.init &&
+                                    input.exp_Operator.oper == "/")
+                                {
+                                    //It's an operator that requires eax
+                                    leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
+                                    memoryManager.UpdateRegisterUsage(leftOutVar);
+                                }
+                                else
+                                {
+                                    leftOutVar = memoryManager.GetFreeRegister(leftTempVar.dataType);
+                                }
+                                //memoryManager.UpdateRegisterUsage(leftOutVar);
+                                result += "\t  mov\t" + leftOutVar.ConvertToString() +
+                                    ",\t" + leftTempVar.ConvertToString() + AST_Program.separator_line;
+                                memoryManager.SetFreeAddress(leftTempVar);
+                            }
+
+                            Variable rightOutVar = null;
+                            string rightOutStr = "";
+                            /*if ((input.right.exp_Type == Exp_Type.Operator && input.right.exp_Operator.init &&
+                                input.right.exp_Operator.layer < input.exp_Operator.layer) ||
+                                input.right.exp_Type == Exp_Type.Function ||
+                                true)*/
+                            {
+                                rightOutVar = ParseExpNode(exp, statement, input.right, out rightOutStr);
+                            }
+                            result += rightOutStr;
+                            //For constants, we can assign them to different int sizes
+                            if (rightOutVar.address.length == -2 &&
+                                leftOutVar.dataType.GetName().StartsWith("int") &&
+                                rightOutVar.dataType.GetName().StartsWith("int") &&
+                                !leftOutVar.dataType.GetName().EndsWith("_ptr") &&
+                                !rightOutVar.dataType.GetName().EndsWith("_ptr"))
+                            {
+                                rightOutVar.dataType = leftOutVar.dataType;
+                            }
+                            if (!leftOutVar.dataType.Equals(rightOutVar.dataType))
+                            {
+                                throw new NotImplementedException("Can\'t perform " + input.exp_Data +
+                                    " on " + leftOutVar.dataType + " and " + rightOutVar.dataType);
+                            }
+
+                            if (input.exp_Data == "+")
+                            {
+                                result += "\t  add\t" + leftOutVar.ConvertToString() +
+                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                res = leftOutVar;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                            }
+                            else if (input.exp_Data == "-")
+                            {
+                                result += "\t  sub\t" + leftOutVar.ConvertToString() +
+                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                res = leftOutVar;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                            }
+                            else if (input.exp_Data == "*")
+                            {
+                                result += "\t imul\t" + leftOutVar.ConvertToString() +
+                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                res = leftOutVar;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                            }
+                            else if (input.exp_Data == "/")
+                            {
+                                bool popAX = false;
+                                if (leftOutVar.address.address != "eax")
+                                {
+                                    if (memoryManager.IsTaken("eax"))
+                                    {
+                                        popAX = true;
+                                        result += "\t push\teax" + AST_Program.separator_line;
+                                    }
+
+                                    //It's an operator that requires eax, MOV it there
+                                    result += "\t  mov\teax,\t" + leftOutVar.ConvertToString() +
+                                        AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(leftOutVar);
+                                    leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
+                                    memoryManager.UpdateRegisterUsage(leftOutVar);
+                                }
+
+                                if (rightOutVar.address.length == -2 || rightOutVar.address.address == "edx")
+                                {
+                                    //We have a constant, move to ebx or ecx
+                                    var tempRightOutVar = rightOutVar;
+                                    rightOutVar = memoryManager.GetFreeRegister(tempRightOutVar.dataType);
+                                    result += "\t  mov\t" + rightOutVar.ConvertToString() +
+                                        ",\t" + tempRightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(tempRightOutVar);
+                                }
+
+                                //Now left variable is in eax
+                                //Push edx in case something uses it
+                                result += "\t push\tedx" + AST_Program.separator_line;
+                                //Zero-out EDX
+                                result += "\t  xor\tedx,\tedx" + AST_Program.separator_line;
+                                //memoryManager.usesDX = true;
+                                result += "\t idiv\t" + rightOutVar.ConvertToString() +
+                                    AST_Program.separator_line;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                                //Pop edx in case something uses it
+                                result += "\t  pop\tedx" + AST_Program.separator_line;
+                                //EAX has the result
+                                if (popAX)
+                                {
+                                    res = memoryManager.GetFreeRegister(leftOutVar.dataType);
+                                    //We know for a fact that left operand is in eax
+                                    memoryManager.SetFreeAddress(leftOutVar);
+                                    result += "\t  mov\t" + res.ConvertToString() +
+                                        ",\teax" + AST_Program.separator_line;
+                                    result += "\t  pop\teax" + AST_Program.separator_line;
+                                }
+                                else
+                                {
+                                    //We just roll with eax
+                                    res = leftOutVar;
+                                }
+                            }
+                            else if (input.exp_Data == "%")
+                            {
+                                bool popAX = false;
+                                if (leftOutVar.address.address != "eax")
+                                {
+                                    if (memoryManager.IsTaken("eax"))
+                                    {
+                                        popAX = true;
+                                        result += "\t push\teax" + AST_Program.separator_line;
+                                    }
+
+                                    //It's an operator that requires eax, MOV it there
+                                    result += "\t  mov\teax,\t" + leftOutVar.ConvertToString() +
+                                        AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(leftOutVar);
+                                    leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
+                                    memoryManager.UpdateRegisterUsage(leftOutVar);
+                                }
+
+                                if (rightOutVar.address.length == -2 || rightOutVar.address.address == "edx")
+                                {
+                                    //We have a constant, move to ebx or ecx
+                                    var tempRightOutVar = rightOutVar;
+                                    rightOutVar = memoryManager.GetFreeRegister(tempRightOutVar.dataType);
+                                    result += "\t  mov\t" + rightOutVar.ConvertToString() +
+                                        ",\t" + tempRightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(tempRightOutVar);
+                                }
+
+                                //Now left variable is in eax
+                                //Push edx in case something uses it
+                                result += "\t push\tedx" + AST_Program.separator_line;
+                                //Zero-out EDX
+                                result += "\t  xor\tedx,\tedx" + AST_Program.separator_line;
+                                //memoryManager.usesDX = true;
+                                result += "\t idiv\t" + rightOutVar.ConvertToString() +
+                                    AST_Program.separator_line;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                                //Result is in edx, MOV it somewhere
+                                var tempLeftOutVar = memoryManager.GetFreeRegister(leftOutVar.dataType);
+                                result += "\t  mov\t" + tempLeftOutVar.ConvertToString() +
+                                    ",\tedx" + AST_Program.separator_line;
+                                res = tempLeftOutVar;
+                                memoryManager.SetFreeAddress(leftOutVar);
+                                //Pop edx in case something uses it
+                                result += "\t  pop\tedx" + AST_Program.separator_line;
+                                //EAX has the result
+                                if (popAX)
+                                {
+                                    result += "\t  pop\teax" + AST_Program.separator_line;
+                                }
+                            }
+                            else if (input.exp_Data == "=")
+                            {
+                                if (input.left.exp_Type != Exp_Type.Variable && !
+                                    (input.left.exp_Type == Exp_Type.Operator && input.left.exp_Operator.oper == "."))
+                                {
+                                    throw new ASS_Exception("Can\'t assign to " + input.left.exp_Type.ToString(),
+                                        new ASS_Exception("Assignment is supported only for variables", -1), -1);
+                                }
+                                result += "\t  mov\t" + leftOutVar.ConvertToString() +
+                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                res = leftOutVar;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                            }
+                            else throw new NotImplementedException(input.exp_Data + " is not supported");
                         }
-                        else throw new NotImplementedException(input.exp_Data + " is not supported");
                     }
                     else throw new NotImplementedException(input.exp_Data + " is not supported");
                 }
@@ -1858,8 +1961,20 @@ namespace SALO_Core.CodeBlocks
                             foundVar = parent.sec3.Find(a => a.ast_variable != null &&
                                 a.address.address == input.exp_Data);
                             if (foundVar == null)
-                                throw new ASS_Exception("Failed to parse variable usage",
-                                    new ASS_Exception("Variable " + input.exp_Data + " was not found", -1), -1);
+                            {
+                                //Search functions
+                                var func = parent.functions.Find(a => a.name == input.exp_Data);
+                                if(func != null)
+                                {
+                                    foundVar = new Variable(null, ParameterType.GetParameterType("void"),
+                                        new Address(input.exp_Data, -4));
+                                }
+                                if (foundVar == null)
+                                {
+                                    throw new ASS_Exception("Failed to parse variable usage",
+                                        new ASS_Exception("Variable " + input.exp_Data + " was not found", -1), -1);
+                                }
+                            }
                         }
                     }
                     else
@@ -1874,7 +1989,8 @@ namespace SALO_Core.CodeBlocks
                     string rightOutStringParams = "";
                     LinkedList<Exp_Node> fParameters = ToParameterList(exp, input.right, out rightOutStringParams);
                     string rightOutStringValues = "";
-                    LinkedList<Variable> fVariables = PushParameters(exp, fParameters, out rightOutStringValues);
+                    LinkedList<Variable> fVariables = PushParameters(exp, statement, 
+                        fParameters, out rightOutStringValues);
                     string[] fParameterTypes = fVariables.Select(a => a.dataType.GetName()).Reverse().ToArray();
                     bool[] fParameterIntConstants = 
                         fVariables.Select(a => 
@@ -1951,6 +2067,15 @@ namespace SALO_Core.CodeBlocks
                     }
                     if (fUsed != null)
                     {
+                        foreach(var p in fUsed.parameters)
+                        {
+                            if (p.DataType is PT_Struct)
+                            {
+                                throw new ASS_Exception("Failed to parse function call",
+                                    new NotImplementedException("Can\'t pass struct " + p.DataType.GetName() +
+                                    " to " + fUsed.name), -1);
+                            }
+                        }
                         //We are dealing with a library function
                         //if (fUsed.functionType == FunctionType.cdecl)
                         //{
@@ -2080,8 +2205,36 @@ namespace SALO_Core.CodeBlocks
                 resString = result;
                 return res;
             }
+            private Exp_Node InjectParameterInFunction(
+                Exp_Statement statement, Exp_Node parameter, Exp_Node function)
+            {
+                if (function.exp_Type != Exp_Type.Function)
+                    throw new ASS_Exception("Can\'t inject parameter not in function", -1);
+                Exp_Node_New functionStart = (Exp_Node_New)function.right;
+                if (functionStart == null)
+                {
+                    function.SetRight(parameter);
+                    return function;
+                }
+                else
+                {
+                    while (functionStart.left != null) functionStart = (Exp_Node_New)functionStart.left;
+                    Exp_Node_New leftParent = (Exp_Node_New)statement.FindParent(functionStart, function);
+                    if (leftParent == null) throw new ASS_Exception("Failed to find parent of injectee function", -1);
+                    Exp_Node_New newComma = new Exp_Node_New(
+                        (Exp_Node_New)parameter,
+                        functionStart,
+                        null,
+                        ",",
+                        Exp_Type.Operator,
+                        Array.Find(AST_Expression.operators_ast, a => a.oper == ","));
+                    if (leftParent.left == functionStart) leftParent.SetLeft(newComma);
+                    if (leftParent.right == functionStart) leftParent.SetRight(newComma);
+                    return function;
+                }
+            }
             private LinkedList<Variable> PushParameters(
-                AST_Expression exp, LinkedList<Exp_Node> parameters, out string result)
+                AST_Expression exp, Exp_Statement statement, LinkedList<Exp_Node> parameters, out string result)
             {
                 string resString = "";
                 LinkedList<Variable> res = new LinkedList<Variable>();
@@ -2089,7 +2242,7 @@ namespace SALO_Core.CodeBlocks
                 while(val != null)
                 {
                     string variableResult = "";
-                    Variable variable = ParseExpNode(exp, val.Value, out variableResult);
+                    Variable variable = ParseExpNode(exp, statement, val.Value, out variableResult);
                     IParameterType parameterType = variable.dataType;
                     resString += variableResult;
 

@@ -37,6 +37,13 @@ namespace SALO_Core.CodeBlocks.Expressions
             exp_Operator = value;
         }
         public AST_Operator exp_Operator { get; protected set; }
+        //Not used
+        public void SetBase(AST_Node newBase)
+        {
+            exp_Base = newBase;
+        }
+        //Not used
+        public AST_Node exp_Base { get; protected set; }
         public Exp_Node()
         {
 

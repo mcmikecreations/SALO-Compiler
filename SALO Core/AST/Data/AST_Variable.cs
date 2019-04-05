@@ -35,6 +35,7 @@ namespace SALO_Core.AST.Data
                 dataType = new CodeBlocks.PT_Struct()
                 {
                     children = ast_structure.variables.Select(a => a.dataType).ToList(),
+                    childNames = ast_structure.variables.Select(a => a.data).ToList(),
                     name = ast_structure.name,
                 };
             }

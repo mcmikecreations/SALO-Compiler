@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace SALO_Core.CodeBlocks
 {
-    class PT_Struct : IParameterType
+    public class PT_Struct : IParameterType
     {
         public List<IParameterType> children;
+        public List<string> childNames;
         public string name;
         public bool Equals(IParameterType other)
         {

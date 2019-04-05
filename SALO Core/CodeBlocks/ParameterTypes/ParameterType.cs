@@ -44,10 +44,26 @@ namespace SALO_Core.CodeBlocks
                         return new PT_Struct()
                         {
                             children = ast_structure.variables.Select(a => a.DataType).ToList(),
+                            childNames = ast_structure.variables.Select(a => a.Data).ToList(),
                             name = ast_structure.name,
                         };
                     }
-                    throw new NotImplementedException(input + " is not yet supported");
+                    else if (Builders.Builder_AST.structures.Find(a => a.name == input) != null)
+                    {
+                        var ast_structure = Builders.Builder_AST.structures.Find(
+                            a => a.name == input);
+                        if (ast_structure == null)
+                            throw new Exceptions.AST_BadFormatException(
+                                "Structure " + input + " is not found",
+                                -1);
+                        return new PT_Struct()
+                        {
+                            children = ast_structure.variables.Select(a => a.DataType).ToList(),
+                            childNames = ast_structure.variables.Select(a => a.Data).ToList(),
+                            name = ast_structure.name,
+                        };
+                    }
+                    else throw new NotImplementedException(input + " is not yet supported");
             }
         }
 
