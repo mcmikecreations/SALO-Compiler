@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using SALO_Core.AST;
 using SALO_Core.Exceptions;
+using SALO_Core.Tools;
 
 namespace SALO_Core.CodeBlocks.Expressions
 {
@@ -106,7 +107,10 @@ namespace SALO_Core.CodeBlocks.Expressions
                     opIndexesLeft[opInd] = input.FindIndex(a => a.isString && a.inStrg == operation);
                     opIndexesRight[opInd] = input.FindLastIndex(a => a.isString && a.inStrg == operation);
                     if ((opIndexesLeft[opLeft] == -1 ||
-                        opIndexesLeft[opInd] < opIndexesLeft[opLeft] || !opLeftFilled) &&
+                        opIndexesLeft[opInd] < opIndexesLeft[opLeft] || !opLeftFilled ||
+                        (opIndexesLeft[opInd] == opIndexesLeft[opLeft] && 
+                        ops[opInd].oper.Length > ops[opLeft].oper.Length)
+                        ) &&
                         opIndexesLeft[opInd] != -1 && ops[opInd].isLeftToRight)
                     {
                         //Operator exists and is closer to the start of input
@@ -114,7 +118,10 @@ namespace SALO_Core.CodeBlocks.Expressions
                         opLeftFilled = true;
                     }
                     if ((opIndexesRight[opRight] == -1 ||
-                        opIndexesRight[opInd] > opIndexesRight[opRight] || !opRightFilled) &&
+                        opIndexesRight[opInd] > opIndexesRight[opRight] || !opRightFilled ||
+                        (opIndexesRight[opInd] == opIndexesRight[opRight] &&
+                        ops[opInd].oper.Length > ops[opRight].oper.Length)
+                        ) &&
                         opIndexesRight[opInd] != -1 && !ops[opInd].isLeftToRight)
                     {
                         opRight = opInd;
@@ -563,6 +570,13 @@ namespace SALO_Core.CodeBlocks.Expressions
             }
             if (!found) throw new AST_BadFormatException(
                  "No operator or operand found in input", charInd + input.Count - 1);
+        }
+        public override Exp_Node Clone()
+        {
+            return new Exp_Node_New(
+                (Exp_Node_New)left?.Clone(), (Exp_Node_New)right?.Clone(), 
+                input == null ? null : new List<string>(ClassExtensions.Clone(input)), 
+                exp_Data, exp_Type, exp_Operator);
         }
         public Exp_Node_New(List<string> input, int charInd)
         {

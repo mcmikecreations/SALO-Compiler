@@ -25,7 +25,7 @@ namespace SALO_Core.AST
     public class AST_Function : AST_Node
     {
         public AccessLevel accessLevel { get; protected set; }
-        public FunctionType functionType { get; protected set; }
+        public FunctionType functionType { get; /*protected */set; }
         public string name { get; protected set; }
         public string path { get; protected set; }
         public LinkedList<AST_Variable> parameters { get; protected set; }

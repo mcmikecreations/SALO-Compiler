@@ -45,7 +45,546 @@
 						"type" : "int32"
 					}
 				]
+			},
+			{
+				"name" : "GetModuleHandle",
+				"path" : "GetModuleHandleA",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void_ptr",
+				"parameters" :
+				[
+					{
+						"name" : "lpModuleName",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "GetTickCount",
+				"path" : "GetTickCount",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "void",
+						"type" : "void"
+					}
+				]
 			}
+		]
+	},
+	{
+		"name" : "user",
+		"path" : "user32.dll",
+		"functions" :
+		[
+			{
+				"name" : "RegisterClass",
+				"path" : "RegisterClassA",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int16",
+				"parameters" :
+				[
+					{
+						"name" : "lpWndClass",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "CreateWindowEx",
+				"path" : "CreateWindowExA",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void_ptr",
+				"parameters" :
+				[
+					{
+						"name" : "dwExStyle",
+						"type" : "int32"
+					},
+					{
+						"name" : "lpClassName",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "lpWindowName",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "dwStyle",
+						"type" : "int32"
+					},
+					{
+						"name" : "X",
+						"type" : "int32"
+					},
+					{
+						"name" : "Y",
+						"type" : "int32"
+					},
+					{
+						"name" : "nWidth",
+						"type" : "int32"
+					},
+					{
+						"name" : "nHeight",
+						"type" : "int32"
+					},
+					{
+						"name" : "hWndParent",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "hMenu",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "hInstance",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "lpParam",
+						"type" : "void_ptr"
+					},
+				]
+			},
+			{
+				"name" : "DefWindowProc",
+				"path" : "DefWindowProcA",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "hWnd",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "Msg",
+						"type" : "int32"
+					},
+					{
+						"name" : "wParam",
+						"type" : "int32"
+					},
+					{
+						"name" : "lParam",
+						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "GetMessage",
+				"path" : "GetMessageA",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "lpMsg",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "hWnd",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "wMsgFilterMin",
+						"type" : "int32"
+					},
+					{
+						"name" : "wMsgFilterMax",
+						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "TranslateMessage",
+				"path" : "TranslateMessage",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "lpMsg",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "DispatchMessage",
+				"path" : "DispatchMessageA",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "lpMsg",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "LoadIcon",
+				"path" : "LoadIconA",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void_ptr",
+				"parameters" :
+				[
+					{
+						"name" : "hInstance",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "lpIconName",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "LoadCursor",
+				"path" : "LoadCursorA",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void_ptr",
+				"parameters" :
+				[
+					{
+						"name" : "hInstance",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "lpCursorName",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "GetClientRect",
+				"path" : "GetClientRect",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "hWnd",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "lpRect",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "GetDC",
+				"path" : "GetDC",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void_ptr",
+				"parameters" :
+				[
+					{
+						"name" : "hWnd",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "ReleaseDC",
+				"path" : "ReleaseDC",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "hWnd",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "hDC",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "PostQuitMessage",
+				"path" : "PostQuitMessage",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void",
+				"parameters" :
+				[
+					{
+						"name" : "nExitCode",
+						"type" : "int32"
+					}
+				]
+			}
+		]
+	},
+	{
+		"name" : "gdi",
+		"path" : "gdi32.dll",
+		"functions" :
+		[
+			{
+				"name" : "ChoosePixelFormat",
+				"path" : "ChoosePixelFormat",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "hdc",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "ppfd",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "SetPixelFormat",
+				"path" : "SetPixelFormat",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "hdc",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "format",
+						"type" : "int32"
+					},
+					{
+						"name" : "ppfd",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "SwapBuffers",
+				"path" : "SwapBuffers",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "hdc",
+						"type" : "void_ptr"
+					}
+				]
+			}
+		]
+	},
+	{
+		"name" : "opengl",
+		"path" : "opengl32.dll",
+		"functions" :
+		[
+			{
+				"name" : "wglCreateContext",
+				"path" : "wglCreateContext",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void_ptr",
+				"parameters" :
+				[
+					{
+						"name" : "hdc",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "wglDeleteContext",
+				"path" : "wglDeleteContext",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "hrc",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "wglMakeCurrent",
+				"path" : "wglMakeCurrent",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "hdc",
+						"type" : "void_ptr"
+					},
+					{
+						"name" : "hrc",
+						"type" : "void_ptr"
+					}
+				]
+			},
+			{
+				"name" : "glViewport",
+				"path" : "glViewport",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void",
+				"parameters" :
+				[
+					{
+						"name" : "x",
+						"type" : "int32"
+					},
+					{
+						"name" : "y",
+						"type" : "int32"
+					},
+					{
+						"name" : "width",
+						"type" : "int32"
+					},
+					{
+						"name" : "height",
+						"type" : "int32"
+					},
+				]
+			},
+			{
+				"name" : "glRotatef",
+				"path" : "glRotatef",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void",
+				"parameters" :
+				[
+					{
+						"name" : "angle",
+						"type" : "int32"
+					},
+					{
+						"name" : "x",
+						"type" : "int32"
+					},
+					{
+						"name" : "y",
+						"type" : "int32"
+					},
+					{
+						"name" : "z",
+						"type" : "int32"
+					},
+				]
+			},
+			{
+				"name" : "glClear",
+				"path" : "glClear",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void",
+				"parameters" :
+				[
+					{
+						"name" : "mask",
+						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "glBegin",
+				"path" : "glBegin",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void",
+				"parameters" :
+				[
+					{
+						"name" : "mode",
+						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "glEnd",
+				"path" : "glEnd",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void",
+				"parameters" :
+				[
+					{
+						"name" : "void",
+						"type" : "void"
+					}
+				]
+			},
+			{
+				"name" : "glColor3f",
+				"path" : "glColor3f",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void",
+				"parameters" :
+				[
+					{
+						"name" : "red",
+						"type" : "int32"
+					},
+					{
+						"name" : "green",
+						"type" : "int32"
+					},
+					{
+						"name" : "blue",
+						"type" : "int32"
+					},
+				]
+			},
+			{
+				"name" : "glVertex3f",
+				"path" : "glVertex3f",
+				"type" : "stdcall",
+				"access" : "Shared",
+				"retVal" : "void",
+				"parameters" :
+				[
+					{
+						"name" : "x",
+						"type" : "int32"
+					},
+					{
+						"name" : "y",
+						"type" : "int32"
+					},
+					{
+						"name" : "z",
+						"type" : "int32"
+					},
+				]
+			},
 		]
 	},
 	{

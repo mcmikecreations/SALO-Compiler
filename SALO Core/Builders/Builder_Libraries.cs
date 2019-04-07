@@ -80,7 +80,7 @@ namespace SALO_Core.CodeBlocks
 
             code += "ends " + name + AST_Program.separator_line;
 
-            return new AST_Function(null, code, 0);
+            return new AST_Function(null, code, 0) { functionType = type };
         }
     }
 
@@ -100,10 +100,22 @@ namespace SALO_Core.CodeBlocks
             return functions.Find(a =>
             {
                 if (a.name != functionName) return false;
-                if (parameterTypes.Length != a.parameters.Count) return false;
-                for (int i = 0; i < parameterTypes.Length; ++i)
+                if (parameterTypes.Length == 0 &&
+                    a.parameters.Count == 1 && a.parameters[0].type.GetName() == "void")
+                    return true;
+                if (a.parameters.Count != parameterTypes.Length) return false;
+                for (int loop = 0; loop < a.parameters.Count; ++loop)
                 {
-                    if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
+                    IParameterType fVar = ParameterType.GetParameterType(
+                        parameterTypes[loop]);
+                    if (!a.parameters[loop].type.Equals(fVar)
+                        && !(
+                        a.parameters[loop].type.GetName().StartsWith("int") &&
+                        !a.parameters[loop].type.GetName().EndsWith("_ptr") &&
+                        fVar.GetName().StartsWith("int") &&
+                        !fVar.GetName().EndsWith("_ptr")/* &&
+                        fVariables.ElementAt(loop).address.length == -2*/))
+                        return false;
                 }
                 return true;
             }) != null;
@@ -113,16 +125,22 @@ namespace SALO_Core.CodeBlocks
             return functions.Find(a =>
             {
                 if (a.name != functionName) return false;
-                if (parameterTypes.Length != a.parameters.Count) return false;
-                for (int i = 0; i < parameterTypes.Length; ++i)
+                if (parameterTypes.Length == 0 &&
+                    a.parameters.Count == 1 && a.parameters[0].type.GetName() == "void")
+                    return true;
+                if (a.parameters.Count != parameterTypes.Length) return false;
+                for (int loop = 0; loop < a.parameters.Count; ++loop)
                 {
-                    if (constantInts[i] &&
-                        parameterTypes[i].StartsWith("int") &&
-                        !parameterTypes[i].EndsWith("_ptr") &&
-                        a.parameters[i].type.GetName().StartsWith("int") &&
-                        !a.parameters[i].type.GetName().EndsWith("_ptr"))
-                        return true;
-                    if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
+                    IParameterType fVar = ParameterType.GetParameterType(
+                        parameterTypes[loop]);
+                    if (!a.parameters[loop].type.Equals(fVar)
+                        && !(
+                        a.parameters[loop].type.GetName().StartsWith("int") &&
+                        !a.parameters[loop].type.GetName().EndsWith("_ptr") &&
+                        fVar.GetName().StartsWith("int") &&
+                        !fVar.GetName().EndsWith("_ptr") &&
+                        constantInts[loop]))
+                        return false;
                 }
                 return true;
             }) != null;
@@ -132,10 +150,22 @@ namespace SALO_Core.CodeBlocks
             return functions.Find(a =>
             {
                 if (a.name != functionName) return false;
-                if (parameterTypes.Length != a.parameters.Count) return false;
-                for (int i = 0; i < parameterTypes.Length; ++i)
+                if (parameterTypes.Length == 0 &&
+                    a.parameters.Count == 1 && a.parameters[0].type.GetName() == "void")
+                    return true;
+                if (a.parameters.Count != parameterTypes.Length) return false;
+                for (int loop = 0; loop < a.parameters.Count; ++loop)
                 {
-                    if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
+                    IParameterType fVar = ParameterType.GetParameterType(
+                        parameterTypes[loop]);
+                    if (!a.parameters[loop].type.Equals(fVar)
+                        && !(
+                        a.parameters[loop].type.GetName().StartsWith("int") &&
+                        !a.parameters[loop].type.GetName().EndsWith("_ptr") &&
+                        fVar.GetName().StartsWith("int") &&
+                        !fVar.GetName().EndsWith("_ptr")/* &&
+                        fVariables.ElementAt(loop).address.length == -2*/))
+                        return false;
                 }
                 return true;
             });
@@ -145,16 +175,22 @@ namespace SALO_Core.CodeBlocks
             return functions.Find(a =>
             {
                 if (a.name != functionName) return false;
-                if (parameterTypes.Length != a.parameters.Count) return false;
-                for (int i = 0; i < parameterTypes.Length; ++i)
+                if (parameterTypes.Length == 0 &&
+                    a.parameters.Count == 1 && a.parameters[0].type.GetName() == "void")
+                    return true;
+                if (a.parameters.Count != parameterTypes.Length) return false;
+                for (int loop = 0; loop < a.parameters.Count; ++loop)
                 {
-                    if (constantInts[i] &&
-                        parameterTypes[i].StartsWith("int") &&
-                        !parameterTypes[i].EndsWith("_ptr") &&
-                        a.parameters[i].type.GetName().StartsWith("int") &&
-                        !a.parameters[i].type.GetName().EndsWith("_ptr"))
-                        return true;
-                    if (parameterTypes[i] != a.parameters[i].type.GetName()) return false;
+                    IParameterType fVar = ParameterType.GetParameterType(
+                        parameterTypes[loop]);
+                    if (!a.parameters[loop].type.Equals(fVar)
+                        && !(
+                        a.parameters[loop].type.GetName().StartsWith("int") &&
+                        !a.parameters[loop].type.GetName().EndsWith("_ptr") &&
+                        fVar.GetName().StartsWith("int") &&
+                        !fVar.GetName().EndsWith("_ptr") &&
+                        constantInts[loop]))
+                        return false;
                 }
                 return true;
             });

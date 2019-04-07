@@ -39,7 +39,23 @@ namespace SALO_Core.AST
             this.toEnd = toEnd;
             this.init = true;
 		}
-	}
+        public static bool operator !=(AST_Operator a, AST_Operator b)
+        {
+            if (a.oper != b.oper) return true;
+            if (a.operandCount != b.operandCount) return true;
+            if (a.layer != b.layer) return true;
+            if (a.isPrefix != b.isPrefix) return true;
+            if (a.isLeftToRight != b.isLeftToRight) return true;
+            if (a.isPaired != b.isPaired) return true;
+            if (a.toEnd != b.toEnd) return true;
+            if (a.init != b.init) return true;
+            return false;
+        }
+        public static bool operator ==(AST_Operator a, AST_Operator b)
+        {
+            return !(a != b);
+        }
+    }
 	public class AST_Expression : AST_Node
 	{
 		public static readonly string naming_ast = "_";
@@ -50,9 +66,12 @@ namespace SALO_Core.AST
             //new AST_Operator("=", 2, 0, null, true, false, false),
 			new AST_Operator("( )", 1, 2, null, true, true, false),
 			new AST_Operator("[ ]", 1, 2, null, true, true, false),
-			new AST_Operator("*", 1, 3, true, false, false, false),
+            new AST_Operator("+", 1, 3, true, false, false, false),
+            new AST_Operator("-", 1, 3, true, false, false, false),
+            new AST_Operator("*", 1, 3, true, false, false, false),
 			new AST_Operator("&", 1, 3, true, false, false, false),
             new AST_Operator(".", 2, 4, null, true, false, false),
+            new AST_Operator("->", 2, 4, null, true, false, false),
             new AST_Operator("*", 2, 5, null, true, false, false),
             new AST_Operator("/", 2, 5, null, true, false, false),
             new AST_Operator("%", 2, 5, null, true, false, false),
@@ -174,13 +193,24 @@ namespace SALO_Core.AST
 							}
 						}
 						//We have an operator
-						else if(input.IndexOf(oper.oper, i) == i)
-						{
-							items.AddLast(oper.oper);
-							i += oper.oper.Length;
-							isOper = true;
-							break;
-						}
+						else
+                        {
+                            if (input.IndexOf(oper.oper, i) == i)
+                            {
+                                AST_Operator best = oper;
+                                //We found a match, but what if there is a longer operator, that also matches?
+                                foreach(AST_Operator oper1 in operators_ast)
+                                {
+                                    if (oper1 == oper) continue;
+                                    if (oper1.oper.Length <= best.oper.Length) continue;
+                                    if (input.IndexOf(oper1.oper, i) == i) best = oper1;
+                                }
+                                items.AddLast(best.oper);
+                                i += best.oper.Length;
+                                isOper = true;
+                                break;
+                            }
+                        }
 					}
 					if (!isOper)
 					{

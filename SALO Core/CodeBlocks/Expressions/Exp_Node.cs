@@ -48,6 +48,10 @@ namespace SALO_Core.CodeBlocks.Expressions
         {
 
         }
+        public virtual Exp_Node Clone()
+        {
+            throw new NotImplementedException();
+        }
         public Exp_Node(List<string> input, int charInd)
         {
             int charIndex = charInd, leftIndex = 0, rightIndex = 0;

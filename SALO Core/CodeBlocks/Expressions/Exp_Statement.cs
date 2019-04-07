@@ -64,8 +64,8 @@ namespace SALO_Core.CodeBlocks.Expressions
 
             if (node.exp_Type == Exp_Type.Operator)
             {
-                if (node.left != null && node.right != null && 
-                    node.left.exp_Type == Exp_Type.Constant && 
+                if (node.left != null && node.right != null &&
+                    node.left.exp_Type == Exp_Type.Constant &&
                     node.right.exp_Type == Exp_Type.Constant)
                 {
                     var lType = GetDataType(node.left);
@@ -181,6 +181,24 @@ namespace SALO_Core.CodeBlocks.Expressions
                         return true;
                     }
                 }
+                else if (node.left == null && node.right != null &&
+                    node.right.exp_Type == Exp_Type.Constant)
+                {
+                    var rType = GetDataType(node.right);
+                    var rValue = node.right.exp_Data;
+                    
+                    var cr = ParameterType.Parse(rValue, (dynamic)rType);
+
+                    if (node.exp_Operator.oper == "-")
+                    {
+                        node.SetLeft(null);
+                        node.SetRight(null);
+                        node.SetData((-cr).ToString());
+                        node.SetType(Exp_Type.Constant);
+                        node.SetOperator(new AST_Operator());
+                        return true;
+                    }
+                }
             }
             return false;
         }
@@ -196,6 +214,11 @@ namespace SALO_Core.CodeBlocks.Expressions
                 if (node.exp_Data[0] == '\"' && node.exp_Data[node.exp_Data.Length - 1] == '\"')
                 {
                     return ParameterType.GetParameterType("lpcstr");
+                }
+                if (node.exp_Data.IndexOf(".") != -1)
+                {
+                    //TODO - make floating-point types
+                    return ParameterType.GetParameterType("int32");
                 }
                 Int32 valInt32 = 0;
                 if (Int32.TryParse(node.exp_Data, out valInt32))

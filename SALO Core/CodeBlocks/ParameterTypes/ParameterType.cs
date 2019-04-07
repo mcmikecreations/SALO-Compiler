@@ -36,7 +36,7 @@ namespace SALO_Core.CodeBlocks
                     else if (input.EndsWith("_struct"))
                     {
                         var ast_structure = Builders.Builder_AST.structures.Find(
-                            a => a.name == input.Remove(input.Length - "_struct".Length));
+                            a => a.name.ToLower() == input.Remove(input.Length - "_struct".Length));
                         if (ast_structure == null)
                             throw new Exceptions.AST_BadFormatException(
                                 "Structure " + input.Remove(input.Length - "_struct".Length) + " is not found",
@@ -48,10 +48,10 @@ namespace SALO_Core.CodeBlocks
                             name = ast_structure.name,
                         };
                     }
-                    else if (Builders.Builder_AST.structures.Find(a => a.name == input) != null)
+                    else if (Builders.Builder_AST.structures.Find(a => a.name.ToLower() == input) != null)
                     {
                         var ast_structure = Builders.Builder_AST.structures.Find(
-                            a => a.name == input);
+                            a => a.name.ToLower() == input);
                         if (ast_structure == null)
                             throw new Exceptions.AST_BadFormatException(
                                 "Structure " + input + " is not found",

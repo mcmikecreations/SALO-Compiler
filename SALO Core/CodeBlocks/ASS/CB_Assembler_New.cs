@@ -77,7 +77,7 @@ namespace SALO_Core.CodeBlocks
             }
             public override string ConvertToString()
             {
-                return ToString(false);
+                return ToString(true);
             }
             public string ToString(bool unfoldPATH)
             {
@@ -92,13 +92,14 @@ namespace SALO_Core.CodeBlocks
                     }
                     if (unfoldPATH)
                     {
-                        result += "include \'" + str + "\'" + AST_Program.separator_line;
+                        result += "include \'" + str.Replace("\\", "/") + "\'" + AST_Program.separator_line;
                     }
                     else
                     {
                         result += "include \'" + t + "\'" + AST_Program.separator_line;
                     }
                 }
+                result += AST_Program.separator_line;
                 return result;
             }
         }
@@ -264,6 +265,7 @@ namespace SALO_Core.CodeBlocks
                         ToDataTypeLabel(t.dataType) + " " +
                         t.ast_variable.Data + AST_Program.separator_line;
                 }
+                result += AST_Program.separator_line;
 
                 return result;
             }
@@ -352,6 +354,7 @@ namespace SALO_Core.CodeBlocks
                 {
                     result += t;
                 }
+                result += AST_Program.separator_line;
 
                 return result;
             }
@@ -369,6 +372,7 @@ namespace SALO_Core.CodeBlocks
                 {
                     result += t + AST_Program.separator_line;
                 }
+                result += AST_Program.separator_line;
                 return result;
             }
         }
@@ -393,7 +397,7 @@ namespace SALO_Core.CodeBlocks
             sec4 = new Code();
             sec5 = new IData();
 
-            sec2.AddValue("%INCLUDE%/win32a.inc");
+            sec2.AddValue("%SALOINCLUDE%/win32amacro.inc");
             Library kernel = defaultLibs.Find(a => a.name == "kernel32");
             kernel.used = true;
             CodeBlocks.Function exitProcess = kernel.functions.Find(a => a.name == "ExitProcess");
@@ -403,9 +407,21 @@ namespace SALO_Core.CodeBlocks
         }
         public override string GetResult()
         {
+            List<string> funcStrings = new List<string>(functions.Count);
+            List<bool> funcUsed = new List<bool>(functions.Count);
             foreach (var f in functions)
             {
-                sec4.AddValue(f.ConvertToString());
+                string fString = f.ConvertToString();
+                funcStrings.Add(fString);
+                //sec4.AddValue(f.ConvertToString());
+            }
+            foreach (var f in functions)
+            {
+                funcUsed.Add(f.isUsed);
+            }
+            for(int i = 0; i < Math.Min(funcStrings.Count, funcUsed.Count); ++i)
+            {
+                if (funcUsed[i]) sec4.AddValue(funcStrings[i]);
             }
             foreach (var l in defaultLibs)
             {
@@ -626,7 +642,7 @@ namespace SALO_Core.CodeBlocks
                 if (length == -2) return true;
                 return false;
             }
-            public bool IsGlobalVariableLabel()
+            public bool IsGlobal()
             {
                 if (length == -3) return true;
                 return false;
@@ -634,7 +650,7 @@ namespace SALO_Core.CodeBlocks
             public bool IsStack()
             {
                 if (IsConstant()) return false;
-                if (IsGlobalVariableLabel()) return false;
+                if (IsGlobal()) return false;
                 if (IsRegister()) return false;
                 if (address == "ebp") return true;
                 return false;
@@ -865,10 +881,15 @@ namespace SALO_Core.CodeBlocks
             MemoryManager memoryManager;
             CB_Assembler_New parent;
             int localLabels = 0;
+            public bool isUsed = false;
             public Function(AST_Function ast_function, CB_Assembler_New parent)
             {
                 this.parent = parent;
                 this.name = ast_function.name;
+                if(ast_function.name == "main")
+                {
+                    isUsed = true;
+                }
                 this.ast_function = ast_function;
                 this.parameters = new List<Variable>();
                 this.locals = new List<Variable>();
@@ -1385,7 +1406,7 @@ namespace SALO_Core.CodeBlocks
                     {
                         rightOutVar = ParseExpNode(exp, statement, input.right, out rightOutStr);
                     }
-                    if (leftOutVar.address.IsConstant() || leftOutVar.address.IsGlobalVariableLabel() ||
+                    if (leftOutVar.address.IsConstant() || leftOutVar.address.IsGlobal() ||
                         (leftOutVar.address.IsStack() &&
                         (rightOutVar.address.IsStack() || input.exp_Data != "=")))
                     {
@@ -1527,7 +1548,8 @@ namespace SALO_Core.CodeBlocks
                 string tempResString = "";
                 if ((exp.head.exp_Type == Exp_Type.Operator && exp.head.exp_Operator.init &&
                     (exp.head.exp_Data == "=" || exp.head.exp_Data == "return" || 
-                    (exp.head.exp_Data == "." && exp.head.right.exp_Type == Exp_Type.Function)
+                    (exp.head.exp_Data == "." && exp.head.right.exp_Type == Exp_Type.Function) ||
+                    (exp.head.exp_Data == "->" && exp.head.right.exp_Type == Exp_Type.Function)
                     )) ||
                     (exp.head.exp_Type == Exp_Type.Function))
                 {
@@ -1662,13 +1684,13 @@ namespace SALO_Core.CodeBlocks
                                     ParameterType.GetParameterType(
                                         rightType.Remove(rightType.Length - "_ptr".Length)));
 
-                                result += "\t  mov\t" + resultVar.ConvertToString() +
+                                result += "\t  mov\t" + resultVar.address.ConvertToString() +
                                     ",\tdword ptr " + rightOutVar.ConvertToString() + AST_Program.separator_line;
                                 memoryManager.SetFreeAddress(rightOutVar);
 
                                 res = resultVar;
                             }
-                            else throw new NotImplementedException(input.exp_Data + " is not supported");
+                            else throw new NotImplementedException("Unary " + input.exp_Data + " is not supported");
                         }
                         else throw new NotImplementedException(input.exp_Data + " is not supported");
                     }
@@ -1709,8 +1731,13 @@ namespace SALO_Core.CodeBlocks
                             }
                             else
                             {
+                                if(input.left.exp_Type == Exp_Type.Operator && 
+                                    (input.left.exp_Data == "."/* || input.left.exp_Data == "->"*/))
+                                {
+                                    //throw new ASS_Exception("Can\'t use chains of function injects", -1);
+                                }
                                 //Parse single-parameter function call
-                                if (input.right.exp_Type == Exp_Type.Function)
+                                if (!(leftOutVar.dataType is PT_Ptr) && input.right.exp_Type == Exp_Type.Function)
                                 {
                                     Exp_Node injected = InjectParameterInFunction(statement, input.left, input.right);
                                     string injectedStr = "";
@@ -1719,15 +1746,88 @@ namespace SALO_Core.CodeBlocks
                                 }
                                 else
                                 {
-                                    throw new ASS_Exception("Can\'t use dot operator for " + input.right.exp_Data, -1);
+                                    throw new ASS_Exception("Can\'t use dot operator for "
+                                        + input.left.exp_Data + " and " + input.right.exp_Data, -1);
                                 }
                             }
+                        }
+                        else if (input.exp_Type == Exp_Type.Operator && input.exp_Data == "->")
+                        {
+                            //Firstly parse only for type checking
+                            string leftOutStr = "";
+                            Variable leftOutVar = null;
+                            leftOutVar = ParseExpNode(exp, statement, input.left, out leftOutStr);
+                            memoryManager.SetFreeAddress(leftOutVar);
+                            //result += leftOutStr;
+                            if (leftOutVar.dataType is PT_Ptr)
+                            {
+                                if (((PT_Ptr)leftOutVar.dataType).innerParameterType is PT_Struct)
+                                {
+                                    if (input.right.exp_Type != Exp_Type.Variable)
+                                    {
+                                        throw new ASS_Exception("Structure member should be a variable", -1);
+                                    }
+                                    //Parse structure member access
+                                    PT_Struct leftType = (PT_Struct)((PT_Ptr)leftOutVar.dataType).innerParameterType;
+                                    Structure structure = parent.sec3.structures.Find(
+                                        a => a.ast_Type.Equals(leftType));
+                                    if (structure == null)
+                                    {
+                                        throw new ASS_Exception("Couldn\'t find a struct with such parameter", -1);
+                                    }
+                                    //Get original from this pointer
+                                    //Exp_Node_New valPtr = new Exp_Node_New(
+                                    //    null, (Exp_Node_New)input.left, null, "*", Exp_Type.Operator,
+                                    //    Array.Find(AST_Expression.operators_ast,
+                                    //    a => a.oper == "*" && a.isLeftToRight == false && a.operandCount == 1));
+
+                                    //Move struct address to a register
+                                    leftOutVar = ParseExpNode(exp, statement, input.left, out leftOutStr);
+                                    result += leftOutStr;
+
+                                    var leftTempVar = memoryManager.GetFreeRegister(leftOutVar.dataType);
+                                    result += "\t  mov\t" + leftTempVar.ConvertToString() +
+                                        ",\t" + leftOutVar.ConvertToString() + AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(leftOutVar);
+                                    leftOutVar = leftTempVar;
+
+                                    var rightOutVar = structure.FindByName(input.right.exp_Data);
+                                    Address newAddr = Address.Advance(
+                                            leftOutVar.address, structure.GetMemberOffset(rightOutVar));
+                                    newAddr.isStructure = true;
+                                    res = new Variable(null, rightOutVar.dataType, newAddr);
+                                }
+                                else
+                                {
+                                    if (input.left.exp_Type == Exp_Type.Operator &&
+                                        (/*input.left.exp_Data == "." || */input.left.exp_Data == "->"))
+                                    {
+                                        //throw new ASS_Exception("Can\'t use chains of function injects", -1);
+                                    }
+                                    //Parse single-parameter function call
+                                    if (input.right.exp_Type == Exp_Type.Function)
+                                    {
+                                        Exp_Node injected = InjectParameterInFunction(
+                                            statement, input.left, input.right);
+                                        string injectedStr = "";
+                                        res = ParseExpNode(exp, statement, injected, out injectedStr);
+                                        result += injectedStr;
+                                    }
+                                    else
+                                    {
+                                        throw new ASS_Exception(
+                                            "Can\'t use dot operator for " + input.right.exp_Data, -1);
+                                    }
+                                }
+                            }
+                            else throw new ASS_Exception("Can\'t use operator -> for non-pointer variables", -1);
                         }
                         else
                         {
                             if (input.exp_Operator.init && input.exp_Operator.oper == "=" &&
                                 input.left.exp_Type != Exp_Type.Variable && !
-                                (input.left.exp_Type == Exp_Type.Operator && input.left.exp_Operator.oper == "."))
+                                (input.left.exp_Type == Exp_Type.Operator && 
+                                (input.left.exp_Operator.oper == "." || input.left.exp_Operator.oper == "->")))
                             {
                                 throw new ASS_Exception(
                                     "Can\'t parse expression because lValue is not a variable", -1);
@@ -1739,7 +1839,7 @@ namespace SALO_Core.CodeBlocks
                             result += leftOutStr;
 
                             if (leftOutVar.address.IsConstant()/* || leftOutVar.address.IsGlobalVariableLabel()*/ ||
-                                (leftOutVar.address.IsStack() &&
+                                ((leftOutVar.address.IsStack() || leftOutVar.address.IsGlobal()) &&
                                 (!input.exp_Operator.init || input.exp_Operator.oper != "=") &&
                                 ((input.right.exp_Operator.init == true && input.right.exp_Operator.oper != "=")
                                 /* TODO - check if right is on stack */ || input.exp_Data != "=")))
@@ -1786,6 +1886,15 @@ namespace SALO_Core.CodeBlocks
                             {
                                 throw new NotImplementedException("Can\'t perform " + input.exp_Data +
                                     " on " + leftOutVar.dataType + " and " + rightOutVar.dataType);
+                            }
+
+                            if (leftOutVar.address.IsGlobal() && rightOutVar.address.IsStack())
+                            {
+                                var rightTempVar = memoryManager.GetFreeRegister(rightOutVar.dataType);
+                                result += "\t  mov\t" + rightTempVar.ConvertToString() +
+                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                                rightOutVar = rightTempVar;
                             }
 
                             if (input.exp_Data == "+")
@@ -1920,7 +2029,8 @@ namespace SALO_Core.CodeBlocks
                             else if (input.exp_Data == "=")
                             {
                                 if (input.left.exp_Type != Exp_Type.Variable && !
-                                    (input.left.exp_Type == Exp_Type.Operator && input.left.exp_Operator.oper == "."))
+                                    (input.left.exp_Type == Exp_Type.Operator && 
+                                    (input.left.exp_Operator.oper == "." || input.left.exp_Operator.oper == "->")))
                                 {
                                     throw new ASS_Exception("Can\'t assign to " + input.left.exp_Type.ToString(),
                                         new ASS_Exception("Assignment is supported only for variables", -1), -1);
@@ -1966,6 +2076,7 @@ namespace SALO_Core.CodeBlocks
                                 var func = parent.functions.Find(a => a.name == input.exp_Data);
                                 if(func != null)
                                 {
+                                    func.isUsed = true;
                                     foundVar = new Variable(null, ParameterType.GetParameterType("void"),
                                         new Address(input.exp_Data, -4));
                                 }
@@ -2048,6 +2159,7 @@ namespace SALO_Core.CodeBlocks
                         if (fLocal != null)
                         {
                             fUsed = fLocal.ast_function;
+                            fLocal.isUsed = true;
                             location = 2;
                         }
                         else
@@ -2211,15 +2323,16 @@ namespace SALO_Core.CodeBlocks
                 if (function.exp_Type != Exp_Type.Function)
                     throw new ASS_Exception("Can\'t inject parameter not in function", -1);
                 Exp_Node_New functionStart = (Exp_Node_New)function.right;
+                var funcClone = function.Clone();
                 if (functionStart == null)
                 {
-                    function.SetRight(parameter);
-                    return function;
+                    funcClone.SetRight(parameter);
+                    return funcClone;
                 }
                 else
                 {
                     while (functionStart.left != null) functionStart = (Exp_Node_New)functionStart.left;
-                    Exp_Node_New leftParent = (Exp_Node_New)statement.FindParent(functionStart, function);
+                    Exp_Node_New leftParent = (Exp_Node_New)statement.FindParent(functionStart, function).Clone();
                     if (leftParent == null) throw new ASS_Exception("Failed to find parent of injectee function", -1);
                     Exp_Node_New newComma = new Exp_Node_New(
                         (Exp_Node_New)parameter,
@@ -2230,7 +2343,7 @@ namespace SALO_Core.CodeBlocks
                         Array.Find(AST_Expression.operators_ast, a => a.oper == ","));
                     if (leftParent.left == functionStart) leftParent.SetLeft(newComma);
                     if (leftParent.right == functionStart) leftParent.SetRight(newComma);
-                    return function;
+                    return funcClone;
                 }
             }
             private LinkedList<Variable> PushParameters(

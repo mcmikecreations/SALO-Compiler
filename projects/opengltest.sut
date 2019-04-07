@@ -1,0 +1,279 @@
+їнасипати "common/lang.sut"
+їнасипати "common/converts.sut"
+
+спільний таріль WNDCLASS
+число style ₴
+нічого_путь lpfnWndProc ₴
+число cbClsExtra ₴
+число cbWndExtra ₴
+нічого_путь hInstance ₴
+нічого_путь hIcon ₴
+нічого_путь hCursor ₴
+нічого_путь hbrBackground ₴
+нічого_путь lpszMenuName ₴
+нічого_путь lpszClassName ₴
+кінець WNDCLASS
+
+спільний таріль POINT
+число X ₴
+число Y ₴
+кінець POINT
+
+спільний таріль RECT
+число left ₴
+число top ₴
+число right ₴
+число bottom ₴
+кінець RECT
+
+спільний таріль MSG
+число message ₴
+число wParam ₴
+число lParam ₴
+число time ₴
+POINT pt ₴
+число lPrivate ₴
+кінець MSG
+
+спільний таріль PIXELFORMATDESCRIPTOR
+куцик nSize ₴
+куцик nVersion ₴
+число dwFlags ₴
+буква iPixelType ₴
+буква cColorBits ₴
+буква cRedBits ₴
+буква cRedShift ₴
+буква cGreenBits ₴
+буква cGreenShift ₴
+буква cBlueBits ₴
+буква cBlueShift ₴
+буква cAlphaBits ₴
+буква cAlphaShift ₴
+буква cAccumBits ₴
+буква cAccumRedBits ₴
+буква cAccumGreenBits ₴
+буква cAccumBlueBits ₴
+буква cAccumAlphaBits ₴
+буква cDepthBits ₴
+буква cStencilBits ₴
+буква cAuxBuffers ₴
+буква iLayerType ₴
+буква bReserved ₴
+число dwLayerMask ₴
+число dwVisibleMask ₴
+число dwDamageMask ₴
+кінець PIXELFORMATDESCRIPTOR
+
+власний шматок WNDCLASSвнічого
+бере WNDCLASS_путь вказівник ₴ кінець
+дає нічого_путь ₴ кінець
+смакує
+рідний смакує
+mov eax, dword ptr ebp+8
+кінець рідний ₴
+кінець
+кінець WNDCLASSвнічого
+
+власний шматок MSGвнічого
+бере MSG_путь вказівник ₴ кінець
+дає нічого_путь ₴ кінець
+смакує
+рідний смакує
+mov eax, dword ptr ebp+8
+кінець рідний ₴
+кінець
+кінець MSGвнічого
+
+власний шматок PIXELFORMATDESCRIPTORвнічого
+бере PIXELFORMATDESCRIPTOR_путь вказівник ₴ кінець
+дає нічого_путь ₴ кінець
+смакує
+рідний смакує
+mov eax, dword ptr ebp+8
+кінець рідний ₴
+кінець
+кінець PIXELFORMATDESCRIPTORвнічого
+
+власний шматок RECTвнічого
+бере RECT_путь вказівник ₴ кінець
+дає нічого_путь ₴ кінець
+смакує
+рідний смакує
+mov eax, dword ptr ebp+8
+кінець рідний ₴
+кінець
+кінець RECTвнічого
+
+спільний загал число theta ₴
+
+спільний загал WNDCLASS wc ₴
+
+спільний загал нічого_путь hwnd ₴
+спільний загал нічого_путь hdc ₴
+спільний загал нічого_путь hrc ₴
+
+спільний загал MSG msg ₴
+спільний загал RECT rc ₴
+спільний загал PIXELFORMATDESCRIPTOR pfd ₴
+
+спільний загал число clock ₴
+
+спільний шматок WindowProc
+бере
+	нічого_путь hwnd ₴
+	число uMsg ₴
+	число wParam ₴
+	число lParam ₴
+кінець
+дає
+	число ₴
+кінець
+смакує
+	якщо (uMsg == 1) смакує								//WM_CREATE
+		hdc = GetDC(hwnd) ₴
+		//занулення всіх даних
+		pfd.bReserved = 0 ₴
+		pfd.cAccumAlphaBits = 0 ₴
+		//pfd.cAccumBits = 0 ₴
+		pfd.cAccumBlueBits = 0 ₴
+		pfd.cAccumGreenBits = 0 ₴
+		pfd.cAccumRedBits = 0 ₴
+		pfd.cAlphaBits = 0 ₴
+		pfd.cAlphaShift = 0 ₴
+		pfd.cAuxBuffers = 0 ₴
+		pfd.cBlueBits = 0 ₴
+		pfd.cBlueShift = 0 ₴
+		//pfd.cColorBits = 0 ₴
+		//pfd.cDepthBits = 0 ₴
+		pfd.cGreenBits = 0 ₴
+		pfd.cGreenShift = 0 ₴
+		pfd.cRedBits = 0 ₴
+		pfd.cRedShift = 0 ₴
+		//pfd.cStencilBits = 0 ₴
+		pfd.dwDamageMask = 0 ₴
+		//pfd.dwFlags = 0 ₴
+		pfd.dwLayerMask = 0 ₴
+		pfd.dwVisibleMask = 0 ₴
+		//pfd.iLayerType = 0 ₴
+		//pfd.iPixelType = 0 ₴
+		//pfd.nSize = 0 ₴
+		//pfd.nVersion = 0 ₴
+		
+		pfd.nSize = 40 ₴								//sizeof.PIXELFORMATDESCRIPTOR
+		pfd.nVersion = 1 ₴
+		pfd.dwFlags = 37 ₴								//PFD_SUPPORT_OPENGL+PFD_DOUBLEBUFFER+PFD_DRAW_TO_WINDOW
+		pfd.iLayerType = 0 ₴							//PFD_MAIN_PLANE
+		pfd.iPixelType = 0 ₴							//PFD_TYPE_RGBA
+		pfd.cColorBits = 16 ₴
+		pfd.cDepthBits = 16 ₴
+		pfd.cAccumBits = 0 ₴
+		pfd.cStencilBits = 0 ₴
+		SetPixelFormat(hdc, ChoosePixelFormat(hdc, PIXELFORMATDESCRIPTORвнічого(&pfd)), PIXELFORMATDESCRIPTORвнічого(&pfd)) ₴
+		hrc = wglCreateContext(hdc) ₴
+		wglMakeCurrent(hdc, hrc) ₴
+		GetClientRect(hwnd, RECTвнічого(&rc)) ₴
+		glViewport(0,0,rc.right, rc.bottom) ₴
+		clock = GetTickCount() ₴
+		вернути 0 ₴
+	кінець інакше смакує
+		якщо (uMsg == 5) смакує							//WM_SIZE
+			GetClientRect(hwnd, RECTвнічого(&rc)) ₴
+			glViewport(0,0,rc.right, rc.bottom) ₴
+			вернути 0 ₴
+		кінець інакше смакує
+			якщо (uMsg == 15) смакує					//WM_PAINT
+				число tClock ₴
+				tClock = GetTickCount() ₴
+				якщо (tClock - clock >= 10) смакує
+					clock = tClock ₴
+					glRotatef(theta, 0,0,1065353216) ₴	//0.6,0.0,0.0,1.0
+				кінець якщо ₴
+				//1065353216 = 1.0
+				//1036831949 = 0.1
+				//1058642330 = 0.6
+				//-1088841318 = -0.6
+				glClear(16384) ₴						//GL_COLOR_BUFFER_BIT
+				glBegin(7) ₴							//GL_QUADS
+					glColor3f(1065353216 , 1036831949 , 1036831949)₴
+					glVertex3f(-1088841318 , -1088841318 , 0)₴
+					glColor3f(1036831949 , 1036831949 , 1036831949)₴
+					glVertex3f(1058642330 , -1088841318 , 0)₴
+					glColor3f(1036831949 , 1036831949 , 1065353216)₴
+					glVertex3f(1058642330 , 1058642330 , 0)₴
+					glColor3f(1065353216 , 1036831949 , 1065353216)₴
+					glVertex3f(-1088841318 , 1058642330 , 0)₴
+				glEnd() ₴
+				SwapBuffers(hdc) ₴
+				
+				вернути 0 ₴
+			кінець інакше смакує
+				якщо (uMsg== 256) смакує				//WM_KEYDOWN
+					якщо (wParam != 27) смакує			//VK_ESCAPE
+						вернути DefWindowProc(hwnd, uMsg, wParam, lParam) ₴
+					кінець інакше смакує
+						//треба видалити вікно
+						wglMakeCurrent(нічоговпуть(), нічоговпуть()) ₴
+						wglDeleteContext(hrc) ₴
+						ReleaseDC(hwnd, hdc) ₴
+						PostQuitMessage(0) ₴
+						вернути 0 ₴
+					кінець якщо ₴
+				кінець інакше смакує
+					якщо (uMsg == 2) смакує				//WM_DESTROY
+						//треба видалити вікно
+						wglMakeCurrent(нічоговпуть(), нічоговпуть()) ₴
+						wglDeleteContext(hrc) ₴
+						ReleaseDC(hwnd, hdc) ₴
+						PostQuitMessage(0) ₴
+						вернути 0 ₴
+					кінець інакше смакує
+						вернути DefWindowProc(hwnd, uMsg, wParam, lParam) ₴
+					кінець якщо ₴
+				кінець якщо ₴
+			кінець якщо ₴
+		кінець якщо ₴
+	кінець якщо ₴
+кінець
+кінець WindowProc
+
+спільний шматок головний
+бере
+	нічого ₴
+кінець
+дає
+	число ₴
+кінець
+смакує
+	theta = 1058642330 ₴															//0.6
+	//попереднє заповнення даних про клас вікна
+	wc.style = 0 ₴
+	wc.lpfnWndProc = &WindowProc ₴
+	wc.cbClsExtra = 0 ₴
+	wc.cbWndExtra = 0 ₴
+	wc.hbrBackground = нічоговпуть() ₴
+	wc.lpszMenuName = нічоговпуть() ₴
+	wc.lpszClassName = стрічкавпуть("FASMOPENGL32") ₴
+	//ініціалізація курсора, іконки і хендла
+	wc.hInstance = GetModuleHandle(нічоговпуть())₴
+	wc.hIcon = LoadIcon(нічоговпуть(),числовпуть(32512))₴							//IDI_APPLICATION
+	wc.hCursor = LoadCursor(нічоговпуть(),числовпуть(32512))₴						//IDC_ARROW
+	//безпосередня реєстрація класу і створення вікна
+	RegisterClass(WNDCLASSвнічого(&wc))₴
+	hwnd = CreateWindowEx(
+		0, стрічкавпуть("FASMOPENGL32"), стрічкавпуть("OpenGL example"), 
+		382664704,																	//WS_VISIBLE+WS_OVERLAPPEDWINDOW+WS_CLIPCHILDREN+WS_CLIPSIBLINGS
+		16, 16, 432, 432, 
+		нічоговпуть(), нічоговпуть(), wc.hInstance, нічоговпуть()) ₴
+	//обробка "ігрового циклу"
+	число цикл ₴
+	цикл = 1 ₴
+	поки (цикл != 0)
+	смакує
+		цикл = GetMessage(MSGвнічого(&msg),нічоговпуть(),0,0) ₴
+		TranslateMessage(MSGвнічого(&msg)) ₴
+		DispatchMessage(MSGвнічого(&msg)) ₴
+	кінець поки ₴
+	//код повернення
+	вернути msg.wParam ₴
+кінець
+кінець головний
