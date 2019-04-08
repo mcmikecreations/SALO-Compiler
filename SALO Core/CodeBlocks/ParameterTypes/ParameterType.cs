@@ -21,6 +21,8 @@ namespace SALO_Core.CodeBlocks
                     return new PT_Int16();
                 case "int8":
                     return new PT_Int8();
+                case "float32":
+                    return new PT_Float32();
                 case "void":
                     return new PT_Void();
                 case "none":
@@ -69,7 +71,19 @@ namespace SALO_Core.CodeBlocks
 
         public static Int32 Parse(string value, PT_Int32 pt)
         {
-            return Int32.Parse(value);
+            return Int32.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        public static Int16 Parse(string value, PT_Int16 pt)
+        {
+            return Int16.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        public static Byte Parse(string value, PT_Int8 pt)
+        {
+            return Byte.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        public static Single Parse(string value, PT_Float32 pt)
+        {
+            return Single.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
         }
     }
     public interface IParameterType : IEquatable<IParameterType>

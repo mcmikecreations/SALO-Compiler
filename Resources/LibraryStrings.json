@@ -483,19 +483,19 @@
 				[
 					{
 						"name" : "angle",
-						"type" : "int32"
+						"type" : "float32"
 					},
 					{
 						"name" : "x",
-						"type" : "int32"
+						"type" : "float32"
 					},
 					{
 						"name" : "y",
-						"type" : "int32"
+						"type" : "float32"
 					},
 					{
 						"name" : "z",
-						"type" : "int32"
+						"type" : "float32"
 					},
 				]
 			},
@@ -551,15 +551,15 @@
 				[
 					{
 						"name" : "red",
-						"type" : "int32"
+						"type" : "float32"
 					},
 					{
 						"name" : "green",
-						"type" : "int32"
+						"type" : "float32"
 					},
 					{
 						"name" : "blue",
-						"type" : "int32"
+						"type" : "float32"
 					},
 				]
 			},
@@ -573,15 +573,15 @@
 				[
 					{
 						"name" : "x",
-						"type" : "int32"
+						"type" : "float32"
 					},
 					{
 						"name" : "y",
-						"type" : "int32"
+						"type" : "float32"
 					},
 					{
 						"name" : "z",
-						"type" : "int32"
+						"type" : "float32"
 					},
 				]
 			},
@@ -639,6 +639,24 @@
 					{
 						"name" : "val",
 						"type" : "int32"
+					}
+				]
+			},
+			{
+				"name" : "printfloat32",
+				"path" : "printf",
+				"type" : "cdecl",
+				"access" : "Shared",
+				"retVal" : "int32",
+				"parameters" :
+				[
+					{
+						"name" : "val",
+						"type" : "lpcstr"
+					},
+					{
+						"name" : "val",
+						"type" : "float32"
 					}
 				]
 			},

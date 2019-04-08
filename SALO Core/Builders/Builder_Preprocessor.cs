@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -23,7 +24,8 @@ namespace SALO_Core.Builders
             return !String.IsNullOrWhiteSpace(path)
                 && path.IndexOfAny(System.IO.Path.GetInvalidPathChars().ToArray()) == -1
                 && Path.IsPathRooted(path)
-                && !Path.GetPathRoot(path).Equals(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal);
+                && !Path.GetPathRoot(path).Equals(Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture), 
+                StringComparison.Ordinal);
         }
 
         public Builder_Preprocessor(string mainFilePath, string input, Builder_Locales locales)
@@ -92,7 +94,8 @@ namespace SALO_Core.Builders
 
         private string IncludeCode(string input, string path)
         {
-            input = input.Replace("function ", "\"" + path + "\" function ");
+            input = input.Replace("cdecl ", "\"" + path + "\" cdecl ");
+            input = input.Replace("stdcall ", "\"" + path + "\" stdcall ");
             input = input.Replace("structure ", "\"" + path + "\" structure ");
             input = input.Replace("global ", "\"" + path + "\" global ");
             //Parse includes

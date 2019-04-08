@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -118,13 +119,19 @@ namespace SALO_Core.AST
 				if (char.IsDigit(input[i]))
 				{
 					string val = "";
-					//TODO - Create a smarter input for hex integers, floats etc.
-					while (char.IsDigit(input[i]))
+                    //TODO - Create a smarter input for hex integers, floats etc.
+                    bool parseNext = true;
+					while (parseNext)
 					{
 						val += input[i];
 						++i;
 						if (i >= input.Length) break;
-					}
+                        parseNext = char.IsDigit(input[i]);
+                        if (!parseNext && input[i] == '.' && i + 1 < input.Length && char.IsDigit(input[i + 1]))
+                        {
+                            parseNext = true;
+                        }
+                    }
 					items.AddLast(val);
 				}
 				else if (input[i] == '\"')
@@ -216,7 +223,7 @@ namespace SALO_Core.AST
 					{
 						if (input[i] == ';')
 						{
-							items.AddLast(input[i].ToString());
+							items.AddLast(input[i].ToString(CultureInfo.InvariantCulture));
 							++i;
 						}
 						else

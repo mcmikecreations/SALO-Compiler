@@ -79,6 +79,7 @@
     <Compile Include="CodeBlocks\Expressions\Exp_Node.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp_Node_New.cs" />
     <Compile Include="CodeBlocks\Expressions\Exp_Type.cs" />
+    <Compile Include="CodeBlocks\ParameterTypes\PT_Float32.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Int16.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Int32.cs" />
     <Compile Include="CodeBlocks\ParameterTypes\PT_Int8.cs" />

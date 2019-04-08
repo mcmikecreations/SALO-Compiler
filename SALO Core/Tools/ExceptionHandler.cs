@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,7 +35,7 @@ namespace SALO_Core.Tools
 							input.Substring(lineStart, index - lineStart) + 
 							"[Error!]" + 
 							input.Substring(index, lineEnd - index);
-						Console.Error.WriteLine("Error at line " + lineNumber.ToString() + ":");
+						Console.Error.WriteLine("Error at line " + lineNumber.ToString(CultureInfo.InvariantCulture) + ":");
 						Console.Error.WriteLine(line);
 					}
 					Console.Error.WriteLine("AST Error caught: " + ast_ex.Message);

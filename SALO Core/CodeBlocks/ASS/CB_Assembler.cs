@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -114,21 +115,21 @@ namespace SALO_Core.CodeBlocks
                     {
                         case "bool":
                             addr += 1;
-                            address = "byte ptr ebp+" + addr.ToString() + "";
+                            address = "byte ptr ebp+" + addr.ToString(CultureInfo.InvariantCulture) + "";
                             break;
                         case "float32":
                             throw new NotImplementedException("Floats are not supported");
                         case "int32":
                             addr += 4;
-                            address = "ptr ebp+" + addr.ToString() + "";
+                            address = "ptr ebp+" + addr.ToString(CultureInfo.InvariantCulture) + "";
                             break;
                         case "int8":
                             addr += 1;
-                            address = "byte ptr ebp+" + addr.ToString() + "";
+                            address = "byte ptr ebp+" + addr.ToString(CultureInfo.InvariantCulture) + "";
                             break;
                         case "int16":
                             addr += 2;
-                            address = "word ptr ebp+" + addr.ToString() + "";
+                            address = "word ptr ebp+" + addr.ToString(CultureInfo.InvariantCulture) + "";
                             break;
                     }
                     functionData.parameters.Add(new Tuple<AST_Variable, bool, string>(p, false, address));
@@ -576,13 +577,13 @@ namespace SALO_Core.CodeBlocks
                     int outputIndex = l.FindIndex(a => a.Item2 == newDims);
                     if (outputIndex == -1)
                         throw new AST_BadFormatException(
-                            newDims.ToString() + "-bit version of " + input + " is not supported", -1);
+                            newDims.ToString(CultureInfo.InvariantCulture) + "-bit version of " + input + " is not supported", -1);
                     //We found our output register
                     return l[outputIndex].Item1;
                 }
             }
             throw new NotImplementedException(
-                "Conversion of " + input + " to " + newDims.ToString() + " is not supported");
+                "Conversion of " + input + " to " + newDims.ToString(CultureInfo.InvariantCulture) + " is not supported");
         }
     }
 }

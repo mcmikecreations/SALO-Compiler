@@ -76,10 +76,15 @@ namespace SALO_Core.AST
             if (i >= input.Length)
                 throw new AST_BadFormatException("Failed to parse function type",
                             new ArgumentOutOfRangeException("input", "Reached the end of input"), charIndex + input.Length - 1);
-            if (input.IndexOf("function", i) == i)
+            if (input.IndexOf("cdecl", i) == i)
             {
                 functionType = FunctionType.cdecl;
-                i += "function".Length;
+                i += "cdecl".Length;
+            }
+            else if (input.IndexOf("stdcall", i) == i)
+            {
+                functionType = FunctionType.stdcall;
+                i += "stdcall".Length;
             }
             else
             {

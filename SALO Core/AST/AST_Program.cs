@@ -107,10 +107,10 @@ namespace SALO_Core.AST
                         while (input[j] != '\"' || input[j - 1] == '\\') ++j;
                         j += 2;
                         //TODO - do checks for other function types
-                        if (input.IndexOf("function", j) == j)
+                        if (input.IndexOf("cdecl", j) == j || input.IndexOf("stdcall", j) == j)
 						{
                             //We have a function
-							int k = j + "function".Length + 1;
+							int k = j + (input.IndexOf("cdecl", j) == j ? "cdecl" : "stdcall").Length + 1;
 
 							if (k >= input.Length)
 								throw new AST_BadFormatException("Failed to parse function name",

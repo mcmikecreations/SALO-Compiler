@@ -6,21 +6,21 @@ using System.Threading.Tasks;
 
 namespace SALO_Core.CodeBlocks
 {
-    public class PT_Int16 : IParameterType
+    public class PT_Float32 : IParameterType
     {
         public bool Equals(IParameterType other)
         {
-            return (other is PT_Int16 &&
+            return (other is PT_Float32 &&
                     GetLengthInBytes() == other.GetLengthInBytes() &&
                     GetName() == other.GetName());
         }
         public int GetLengthInBytes()
         {
-            return 2;
+            return 4;
         }
         public string GetName()
         {
-            return "int16";
+            return "float32";
         }
     }
 }

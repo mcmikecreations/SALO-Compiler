@@ -87,7 +87,11 @@
 		},
 		{
 			"locale" : "шматок",
-			"translated" : "function"
+			"translated" : "cdecl"
+		},
+		{
+			"locale" : "порція",
+			"translated" : "stdcall"
 		},
 		{
 			"locale" : "бере",

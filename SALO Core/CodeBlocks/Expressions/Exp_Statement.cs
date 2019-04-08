@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -85,7 +86,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl + cr).ToString());
+                        node.SetData((cl + cr).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -94,7 +95,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl - cr).ToString());
+                        node.SetData((cl - cr).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -103,7 +104,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl * cr).ToString());
+                        node.SetData((cl * cr).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -112,7 +113,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl / cr).ToString());
+                        node.SetData((cl / cr).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -121,7 +122,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl % cr).ToString());
+                        node.SetData((cl % cr).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -130,7 +131,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl == cr ? 1 : 0).ToString());
+                        node.SetData((cl == cr ? 1 : 0).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -139,7 +140,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl != cr ? 1 : 0).ToString());
+                        node.SetData((cl != cr ? 1 : 0).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -148,7 +149,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl > cr ? 1 : 0).ToString());
+                        node.SetData((cl > cr ? 1 : 0).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -157,7 +158,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl < cr ? 1 : 0).ToString());
+                        node.SetData((cl < cr ? 1 : 0).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -166,7 +167,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl >= cr ? 1 : 0).ToString());
+                        node.SetData((cl >= cr ? 1 : 0).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -175,7 +176,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((cl <= cr ? 1 : 0).ToString());
+                        node.SetData((cl <= cr ? 1 : 0).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -193,7 +194,7 @@ namespace SALO_Core.CodeBlocks.Expressions
                     {
                         node.SetLeft(null);
                         node.SetRight(null);
-                        node.SetData((-cr).ToString());
+                        node.SetData((-cr).ToString(CultureInfo.InvariantCulture));
                         node.SetType(Exp_Type.Constant);
                         node.SetOperator(new AST_Operator());
                         return true;
@@ -217,21 +218,29 @@ namespace SALO_Core.CodeBlocks.Expressions
                 }
                 if (node.exp_Data.IndexOf(".") != -1)
                 {
-                    //TODO - make floating-point types
-                    return ParameterType.GetParameterType("int32");
+                    Single valFloat32;
+                    if(Single.TryParse(node.exp_Data, NumberStyles.Float,
+                        CultureInfo.InvariantCulture.NumberFormat, out valFloat32))
+                    {
+                        return ParameterType.GetParameterType("float32");
+                    }
+                    //return ParameterType.GetParameterType("int32");
                 }
                 Int32 valInt32 = 0;
-                if (Int32.TryParse(node.exp_Data, out valInt32))
+                if (Int32.TryParse(node.exp_Data, NumberStyles.Integer,
+                        CultureInfo.InvariantCulture.NumberFormat, out valInt32))
                 {
                     return ParameterType.GetParameterType("int32");
                 }
                 Int16 valInt16 = 0;
-                if (Int16.TryParse(node.exp_Data, out valInt16))
+                if (Int16.TryParse(node.exp_Data, NumberStyles.Integer,
+                        CultureInfo.InvariantCulture.NumberFormat, out valInt16))
                 {
                     return ParameterType.GetParameterType("int16");
                 }
                 byte valInt8 = 0;
-                if (byte.TryParse(node.exp_Data, out valInt8))
+                if (byte.TryParse(node.exp_Data, NumberStyles.Integer,
+                        CultureInfo.InvariantCulture.NumberFormat, out valInt8))
                 {
                     return ParameterType.GetParameterType("int8");
                 }

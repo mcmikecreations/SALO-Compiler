@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -359,7 +360,10 @@ namespace SALO_Core.CodeBlocks.Expressions
             int val_i = 0;
             float val_f = 0;
             if (input[0] == '\"' && input[input.Length - 1] == '\"') return true;
-            if (float.TryParse(input, out val_f) || int.TryParse(input, out val_i)) return true;
+            if (float.TryParse(input, NumberStyles.Float, 
+                CultureInfo.InvariantCulture.NumberFormat, out val_f) || 
+                int.TryParse(input, NumberStyles.Integer,
+                CultureInfo.InvariantCulture.NumberFormat, out val_i)) return true;
             return false;
         }
         public static bool isOperation(string input)

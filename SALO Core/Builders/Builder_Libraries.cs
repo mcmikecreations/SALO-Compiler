@@ -31,6 +31,7 @@ namespace SALO_Core.CodeBlocks
         public IParameterType retVal { get; set; }
         public List<Parameter> parameters { get; set; }
         public bool used = false;
+        public List<object> usedFrom = new List<object>();
         private Library parent = null;
         public void SetParent(Library library) { parent = library; }
         public AST_Function ToASTFunction()
@@ -58,7 +59,18 @@ namespace SALO_Core.CodeBlocks
                 throw new ASS_Exception("Function " + name + " does not have a parent library", -1);
                 //code += "\"" + path + "\" ";
             }
-            code += "function " + path + AST_Program.separator_line;
+            if(type == FunctionType.cdecl)
+            {
+                code += "cdecl " + path + AST_Program.separator_line;
+            }
+            else if (type == FunctionType.stdcall)
+            {
+                code += "stdcall " + path + AST_Program.separator_line;
+            }
+            else
+            {
+                throw new NotImplementedException("Function type " + type + " is not suppported");
+            }
 
             code += "takes" + AST_Program.separator_line;
             if (parameters.Count == 0)

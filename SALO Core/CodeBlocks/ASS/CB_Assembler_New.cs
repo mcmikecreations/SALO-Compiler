@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,106 @@ namespace SALO_Core.CodeBlocks
 {
     public class CB_Assembler_New : CB
     {
+        public bool UpdateIsUsedLocal()
+        {
+            bool res = false;
+            foreach (var f in functions)
+            {
+                if (f.isUsed)
+                {
+                    bool shouldUse = false;
+                    foreach(object o in f.usedFrom)
+                    {
+                        if (o is CB_Assembler_New.Function)
+                        {
+                            if (o == f) continue;
+                            if (((Function)o).isUsed)
+                            {
+                                shouldUse = true;
+                                break;
+                            }
+                        }
+                        else if (o is string)
+                        {
+                            shouldUse = true;
+                            break;
+                        }
+                        else if (o is CodeBlocks.Function)
+                        {
+                            if (((CodeBlocks.Function)o).used)
+                            {
+                                shouldUse = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!shouldUse)
+                    {
+                        f.isUsed = false;
+                        res = true;
+                    }
+                }
+            }
+            return res;
+        }
+        public bool UpdateIsUsedLib()
+        {
+            bool res = false;
+            foreach (var l in defaultLibs)
+            {
+                if (l.used)
+                {
+                    foreach (var f in l.functions)
+                    {
+                        if (f.used)
+                        {
+                            bool shouldUse = false;
+                            foreach (object o in f.usedFrom)
+                            {
+                                if (o is CB_Assembler_New.Function)
+                                {
+                                    if (o == f) continue;
+                                    if (((Function)o).isUsed)
+                                    {
+                                        shouldUse = true;
+                                        break;
+                                    }
+                                }
+                                else if (o is string)
+                                {
+                                    shouldUse = true;
+                                    break;
+                                }
+                                else if (o is CodeBlocks.Function)
+                                {
+                                    if (((CodeBlocks.Function)o).used)
+                                    {
+                                        shouldUse = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!shouldUse)
+                            {
+                                f.used = false;
+                                res = true;
+                            }
+                        }
+                    }
+                    bool remLib = true;
+                    foreach (var f in l.functions)
+                    {
+                        if (f.used) remLib = false;
+                    }
+                    if (remLib)
+                    {
+                        l.used = false;
+                        res = true;
+                    }
+                }
+            }
+            return res;
+        }
         public static string ToDataTypeLabel(IParameterType parameterType)
         {
             if (parameterType is PT_Void || parameterType is PT_None)
@@ -22,7 +123,7 @@ namespace SALO_Core.CodeBlocks
                 throw new ASS_Exception("Error converting parameter type to an assembler label",
                     new ASS_Exception("Empty parameter types can\'t be converted to an assembler label", -1), -1);
             }
-            else if (parameterType is PT_Int32 || parameterType is PT_Ptr)
+            else if (parameterType is PT_Int32 || parameterType is PT_Ptr || parameterType is PT_Float32)
             {
                 return "dd";
             }
@@ -77,9 +178,9 @@ namespace SALO_Core.CodeBlocks
             }
             public override string ConvertToString()
             {
-                return ToString(true);
+                return ConvertToString(true);
             }
-            public string ToString(bool unfoldPATH)
+            public string ConvertToString(bool unfoldPATH)
             {
                 string result = "";
                 foreach (string t in values)
@@ -189,16 +290,19 @@ namespace SALO_Core.CodeBlocks
                         //We have a special character
                         if (parsedInput.Length > 0 && parsedInput[parsedInput.Length - 1] == ',')
                         {
-                            parsedInput += ToSpecialSymbol(input[i + 1], input[i]).ToString() + ",";
+                            parsedInput += ToSpecialSymbol(input[i + 1], input[i]).
+                                ToString(CultureInfo.InvariantCulture) + ",";
                         }
                         else if (parsedInput.Length == 0)
                         {
-                            parsedInput += ToSpecialSymbol(input[i + 1], input[i]).ToString() + ",";
+                            parsedInput += ToSpecialSymbol(input[i + 1], input[i]).
+                                ToString(CultureInfo.InvariantCulture) + ",";
                         }
                         else
                         {
                             //We have a letter
-                            parsedInput += "\"," + ToSpecialSymbol(input[i + 1], input[i]).ToString() + ",";
+                            parsedInput += "\"," + ToSpecialSymbol(input[i + 1], input[i]).
+                                ToString(CultureInfo.InvariantCulture) + ",";
                         }
                         ++i;
                     }
@@ -235,7 +339,7 @@ namespace SALO_Core.CodeBlocks
                 parsedInput += "0";
                 Variable v = new Variable(new AST_Variable(null, "lpcstr", parsedInput),
                     ParameterType.GetParameterType("lpcstr"),
-                    new Address("lpcstr" + values.Count.ToString(), -3));
+                    new Address("lpcstr" + values.Count.ToString(CultureInfo.InvariantCulture), -3));
                 Variable found = values.Find(a =>
                     a.dataType.Equals(v.dataType) &&
                     a.address.length == v.address.length &&
@@ -397,11 +501,12 @@ namespace SALO_Core.CodeBlocks
             sec4 = new Code();
             sec5 = new IData();
 
-            sec2.AddValue("%SALOINCLUDE%/win32amacro.inc");
+            sec2.AddValue("%SALOINCLUDE%\\win32amacro.inc");
             Library kernel = defaultLibs.Find(a => a.name == "kernel32");
             kernel.used = true;
             CodeBlocks.Function exitProcess = kernel.functions.Find(a => a.name == "ExitProcess");
             exitProcess.used = true;
+            exitProcess.usedFrom.Add("global");
             //sec5.AddValue(kernel);
             //sec5.AddValue(msvcrt);
         }
@@ -414,6 +519,11 @@ namespace SALO_Core.CodeBlocks
                 string fString = f.ConvertToString();
                 funcStrings.Add(fString);
                 //sec4.AddValue(f.ConvertToString());
+            }
+            bool keepLooping = true;
+            while (keepLooping)
+            {
+                keepLooping = UpdateIsUsedLib() || UpdateIsUsedLocal();
             }
             foreach (var f in functions)
             {
@@ -605,20 +715,23 @@ namespace SALO_Core.CodeBlocks
                             return address.Remove(0, 1).Remove(1) + "l";
                         }
                         if (offset == 0) return "byte ptr " + address;
-                        return "byte ptr " + address +  (offset < 0 ? "-" + (-offset).ToString() :
-                            "+" + offset.ToString());
+                        return "byte ptr " + address +  (offset < 0 ? "-" + (-offset).
+                            ToString(CultureInfo.InvariantCulture) :
+                            "+" + offset.ToString(CultureInfo.InvariantCulture));
                     case 2:
                         if (IsRegister())
                         {
                             return address.Remove(0, 1);
                         }
                         if (offset == 0) return "word ptr " + address;
-                        return "word ptr " + address + (offset < 0 ? "-" + (-offset).ToString() :
-                            "+" + offset.ToString());
+                        return "word ptr " + address + (offset < 0 ? "-" + (-offset).
+                            ToString(CultureInfo.InvariantCulture) :
+                            "+" + offset.ToString(CultureInfo.InvariantCulture));
                     default:
                         if (offset == 0) return "dword ptr " + address;
-                        return "dword ptr " + address + (offset < 0 ? "-" + (-offset).ToString() :
-                            "+" + offset.ToString());
+                        return "dword ptr " + address + (offset < 0 ? "-" + (-offset).
+                            ToString(CultureInfo.InvariantCulture) :
+                            "+" + offset.ToString(CultureInfo.InvariantCulture));
                 }
             }
             public static int GetLength(IParameterType dataType)
@@ -635,12 +748,18 @@ namespace SALO_Core.CodeBlocks
                 {
                     return true;
                 }
+                if (address.StartsWith("xmm")) return false;
                 throw new NotImplementedException("Register " + address + " is not supported");
             }
             public bool IsConstant()
             {
                 if (length == -2) return true;
                 return false;
+            }
+            public bool IsFloatRegister()
+            {
+                if (length != -1) return false;
+                return address.StartsWith("xmm");
             }
             public bool IsGlobal()
             {
@@ -686,6 +805,7 @@ namespace SALO_Core.CodeBlocks
         public class MemoryManager
         {
             private bool axTaken = false, bxTaken = false, cxTaken = false, dxTaken = false;
+            private bool[] xmmTaken = new bool[10];
             public bool usesBX = false, usesCX = false, usesDX = false;
             Variable stackStart;
             Stack<Variable> stack;
@@ -764,6 +884,31 @@ namespace SALO_Core.CodeBlocks
                     return result;
                 }
             }
+            public Variable GetFreeFloatReg(PT_Float32 dataType)
+            {
+                int index = 0;
+                while (index < 10 && xmmTaken[index]) index++;
+                if (index >= 10) throw new NotImplementedException("No more xmm registers left");
+                xmmTaken[index] = true;
+                return new Variable(null, dataType, new Address(
+                    "xmm" + index.ToString(CultureInfo.InvariantCulture), -1));
+            }
+            public void SetFreeFloatReg(Variable oldVariable)
+            {
+                if(oldVariable.address.length == -1 && oldVariable.address.address.StartsWith("xmm"))
+                {
+                    int index = int.Parse(
+                        oldVariable.address.address.Replace("xmm", ""), 
+                        CultureInfo.InvariantCulture);
+                    if (!xmmTaken[index])
+                        throw new ASS_Exception("Memory manager corrupt: " + oldVariable.address.address, -1);
+                    xmmTaken[index] = false;
+                }
+                else
+                {
+                    SetFreeAddress(oldVariable);
+                }
+            }
             public Variable GetFreeRegister(IParameterType dataType)
             {
                 if (dataType.GetLengthInBytes() > 0)
@@ -803,6 +948,11 @@ namespace SALO_Core.CodeBlocks
                 if (oldVariable == null) return;
                 if (oldVariable.address.length == -1)
                 {
+                    if (oldVariable.address.address.StartsWith("xmm"))
+                    {
+                        SetFreeFloatReg(oldVariable);
+                        return;
+                    }
                     if (oldVariable.address.address == "eax")
                     {
                         if (!axTaken)
@@ -882,6 +1032,7 @@ namespace SALO_Core.CodeBlocks
             CB_Assembler_New parent;
             int localLabels = 0;
             public bool isUsed = false;
+            public List<object> usedFrom = new List<object>();
             public Function(AST_Function ast_function, CB_Assembler_New parent)
             {
                 this.parent = parent;
@@ -889,6 +1040,7 @@ namespace SALO_Core.CodeBlocks
                 if(ast_function.name == "main")
                 {
                     isUsed = true;
+                    usedFrom.Add("global");
                 }
                 this.ast_function = ast_function;
                 this.parameters = new List<Variable>();
@@ -994,7 +1146,8 @@ namespace SALO_Core.CodeBlocks
                     }
                     else if (functionType == FunctionType.stdcall)
                     {
-                        end += "  ret " + GetByteCount(parameters).ToString() + AST_Program.separator_line;
+                        end += "  ret " + GetByteCount(parameters).ToString(CultureInfo.InvariantCulture)
+                            + AST_Program.separator_line;
                     }
                     else throw new NotImplementedException(functionType + " is not supported");
                 }
@@ -1005,7 +1158,8 @@ namespace SALO_Core.CodeBlocks
                 {
                     int ceilingInput = GetByteCount(locals);
                     int ceilingResult = ((ceilingInput / 16) + (ceilingInput % 16 == 0 ? 0 : 1)) * 16;
-                    result += "\t  sub\tesp,\t" + ceilingResult.ToString() + AST_Program.separator_line;
+                    result += "\t  sub\tesp,\t" + ceilingResult.ToString(CultureInfo.InvariantCulture)
+                        + AST_Program.separator_line;
                 }
 
                 if (memoryManager.usesBX)
@@ -1061,7 +1215,7 @@ namespace SALO_Core.CodeBlocks
                         if(statement.else_expressions == null)
                         {
                             //Create a label to get out of scope
-                            string restLabel = ".L" + (localLabels++).ToString();
+                            string restLabel = ".L" + (localLabels++).ToString(CultureInfo.InvariantCulture);
 
                             //Parse conditional expression
                             string conditionResultString = "";
@@ -1109,8 +1263,8 @@ namespace SALO_Core.CodeBlocks
                         {
                             //We have an if-else
                             //Create a label to get out of scope
-                            string elseLabel = ".L" + (localLabels++).ToString();
-                            string restLabel = ".L" + (localLabels++).ToString();
+                            string elseLabel = ".L" + (localLabels++).ToString(CultureInfo.InvariantCulture);
+                            string restLabel = ".L" + (localLabels++).ToString(CultureInfo.InvariantCulture);
 
                             //Parse conditional expression
                             string conditionResultString = "";
@@ -1201,8 +1355,8 @@ namespace SALO_Core.CodeBlocks
                     if (IsOperatorLogic(exp.head.exp_Operator))
                     {
                         //Create a label to get out of scope
-                        string startLabel = ".L" + (localLabels++).ToString();
-                        string restLabel = ".L" + (localLabels++).ToString();
+                        string startLabel = ".L" + (localLabels++).ToString(CultureInfo.InvariantCulture);
+                        string restLabel = ".L" + (localLabels++).ToString(CultureInfo.InvariantCulture);
 
                         result += startLabel + ":" + AST_Program.separator_line;
 
@@ -1270,8 +1424,8 @@ namespace SALO_Core.CodeBlocks
                     if (IsOperatorLogic(exp.head.exp_Operator))
                     {
                         //Create a label to get out of scope
-                        string startLabel = ".L" + (localLabels++).ToString();
-                        string restLabel = ".L" + (localLabels++).ToString();
+                        string startLabel = ".L" + (localLabels++).ToString(CultureInfo.InvariantCulture);
+                        string restLabel = ".L" + (localLabels++).ToString(CultureInfo.InvariantCulture);
 
                         result += startLabel + ":" + AST_Program.separator_line;
 
@@ -1612,8 +1766,16 @@ namespace SALO_Core.CodeBlocks
                                 {
                                     //throw new ASS_Exception("TODO - Should we break or override?", -1);
                                 }
-                                result += "\t  mov\teax,\t" + rightOutVar.ConvertToString() +
-                                    AST_Program.separator_line;
+                                if(rightOutVar.dataType is PT_Float32 && rightOutVar.address.IsFloatRegister())
+                                {
+                                    result += "\tmovss\teax,\t" + rightOutVar.ConvertToString() +
+                                        AST_Program.separator_line;
+                                }
+                                else
+                                {
+                                    result += "\t  mov\teax,\t" + rightOutVar.ConvertToString() +
+                                        AST_Program.separator_line;
+                                }
                                 memoryManager.SetFreeAddress(rightOutVar);
                                 rightOutVar = new Variable(null, rightOutVar.dataType, new Address("eax", -1));
                                 memoryManager.UpdateRegisterUsage(rightOutVar);
@@ -1633,7 +1795,11 @@ namespace SALO_Core.CodeBlocks
                             rightOutVar = ParseExpNode(exp, statement, input.right, out rightOutStr);
                             result += rightOutStr;
 
-                            if (input.exp_Data == "&")
+                            if (input.exp_Data == "-")
+                            {
+                                throw new NotImplementedException("Unary - is not yet supported");
+                            }
+                            else if (input.exp_Data == "&")
                             {
                                 if(input.right.exp_Type != Exp_Type.Variable)
                                 {
@@ -1846,21 +2012,49 @@ namespace SALO_Core.CodeBlocks
                             {
                                 //We have to move our expression result to a register
                                 Variable leftTempVar = leftOutVar;
-                                if (input.exp_Type == Exp_Type.Operator && input.exp_Operator.init &&
-                                    input.exp_Operator.oper == "/")
+                                if (leftTempVar.dataType is PT_Float32)
                                 {
-                                    //It's an operator that requires eax
-                                    leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
-                                    memoryManager.UpdateRegisterUsage(leftOutVar);
+                                    if (leftOutVar.address.IsStack())
+                                    {
+                                        leftOutVar = memoryManager.GetFreeFloatReg((PT_Float32)leftTempVar.dataType);
+                                        result += "\tmovss\t" + leftOutVar.ConvertToString() +
+                                            ",\t" + leftTempVar.ConvertToString() + AST_Program.separator_line;
+                                        memoryManager.SetFreeAddress(leftTempVar);
+                                    }
+                                    else
+                                    {
+                                        if (leftOutVar.address.IsConstant())
+                                        {
+                                            var leftTempVar1 = memoryManager.GetFreeRegister(leftOutVar.dataType);
+                                            result += "\t  mov\t" + leftTempVar1.ConvertToString() +
+                                                ",\t" + leftOutVar.ConvertToString() + AST_Program.separator_line;
+                                            memoryManager.SetFreeAddress(leftOutVar);
+                                            leftOutVar = leftTempVar1;
+                                        }
+                                        leftOutVar = memoryManager.GetFreeFloatReg((PT_Float32)leftTempVar.dataType);
+                                        result += "\t movd\t" + leftOutVar.ConvertToString() +
+                                            ",\t" + leftTempVar.ConvertToString() + AST_Program.separator_line;
+                                        memoryManager.SetFreeAddress(leftTempVar);
+                                    }
                                 }
                                 else
                                 {
-                                    leftOutVar = memoryManager.GetFreeRegister(leftTempVar.dataType);
+                                    if (input.exp_Type == Exp_Type.Operator && input.exp_Operator.init &&
+                                        input.exp_Operator.oper == "/")
+                                    {
+                                        //It's an operator that requires eax
+                                        leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
+                                        memoryManager.UpdateRegisterUsage(leftOutVar);
+                                    }
+                                    else
+                                    {
+                                        leftOutVar = memoryManager.GetFreeRegister(leftTempVar.dataType);
+                                    }
+                                    //memoryManager.UpdateRegisterUsage(leftOutVar);
+                                    result += "\t  mov\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + leftTempVar.ConvertToString() + AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(leftTempVar);
                                 }
-                                //memoryManager.UpdateRegisterUsage(leftOutVar);
-                                result += "\t  mov\t" + leftOutVar.ConvertToString() +
-                                    ",\t" + leftTempVar.ConvertToString() + AST_Program.separator_line;
-                                memoryManager.SetFreeAddress(leftTempVar);
                             }
 
                             Variable rightOutVar = null;
@@ -1887,7 +2081,6 @@ namespace SALO_Core.CodeBlocks
                                 throw new NotImplementedException("Can\'t perform " + input.exp_Data +
                                     " on " + leftOutVar.dataType + " and " + rightOutVar.dataType);
                             }
-
                             if (leftOutVar.address.IsGlobal() && rightOutVar.address.IsStack())
                             {
                                 var rightTempVar = memoryManager.GetFreeRegister(rightOutVar.dataType);
@@ -1896,86 +2089,152 @@ namespace SALO_Core.CodeBlocks
                                 memoryManager.SetFreeAddress(rightOutVar);
                                 rightOutVar = rightTempVar;
                             }
+                            //Floating-point operations work only on xmm, xmm/r32
+                            //If it is a constant, move it to a register, than
+                            if (rightOutVar.dataType is PT_Float32 && rightOutVar.address.IsConstant()
+                                && input.exp_Data != "=")
+                            {
+                                var rightTempVar = memoryManager.GetFreeRegister(rightOutVar.dataType);
+                                result += "\t  mov\t" + rightTempVar.ConvertToString() +
+                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                                rightOutVar = rightTempVar;
+                            }
+                            if(rightOutVar.dataType is PT_Float32 && !(
+                                rightOutVar.address.IsFloatRegister() || rightOutVar.address.IsStack()
+                                )
+                                && input.exp_Data != "=")
+                            {
+                                var rightTempVar = memoryManager.GetFreeFloatReg((PT_Float32)rightOutVar.dataType);
+                                result += "\t movd\t" + rightTempVar.ConvertToString() +
+                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                memoryManager.SetFreeAddress(rightOutVar);
+                                rightOutVar = rightTempVar;
+                            }
 
                             if (input.exp_Data == "+")
                             {
-                                result += "\t  add\t" + leftOutVar.ConvertToString() +
-                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                                res = leftOutVar;
-                                memoryManager.SetFreeAddress(rightOutVar);
-                            }
-                            else if (input.exp_Data == "-")
-                            {
-                                result += "\t  sub\t" + leftOutVar.ConvertToString() +
-                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                                res = leftOutVar;
-                                memoryManager.SetFreeAddress(rightOutVar);
-                            }
-                            else if (input.exp_Data == "*")
-                            {
-                                result += "\t imul\t" + leftOutVar.ConvertToString() +
-                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                                res = leftOutVar;
-                                memoryManager.SetFreeAddress(rightOutVar);
-                            }
-                            else if (input.exp_Data == "/")
-                            {
-                                bool popAX = false;
-                                if (leftOutVar.address.address != "eax")
+                                if (leftOutVar.dataType is PT_Float32)
                                 {
-                                    if (memoryManager.IsTaken("eax"))
-                                    {
-                                        popAX = true;
-                                        result += "\t push\teax" + AST_Program.separator_line;
-                                    }
-
-                                    //It's an operator that requires eax, MOV it there
-                                    result += "\t  mov\teax,\t" + leftOutVar.ConvertToString() +
-                                        AST_Program.separator_line;
-                                    memoryManager.SetFreeAddress(leftOutVar);
-                                    leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
-                                    memoryManager.UpdateRegisterUsage(leftOutVar);
-                                }
-
-                                if (rightOutVar.address.length == -2 || rightOutVar.address.address == "edx")
-                                {
-                                    //We have a constant, move to ebx or ecx
-                                    var tempRightOutVar = rightOutVar;
-                                    rightOutVar = memoryManager.GetFreeRegister(tempRightOutVar.dataType);
-                                    result += "\t  mov\t" + rightOutVar.ConvertToString() +
-                                        ",\t" + tempRightOutVar.ConvertToString() + AST_Program.separator_line;
-                                    memoryManager.SetFreeAddress(tempRightOutVar);
-                                }
-
-                                //Now left variable is in eax
-                                //Push edx in case something uses it
-                                result += "\t push\tedx" + AST_Program.separator_line;
-                                //Zero-out EDX
-                                result += "\t  xor\tedx,\tedx" + AST_Program.separator_line;
-                                //memoryManager.usesDX = true;
-                                result += "\t idiv\t" + rightOutVar.ConvertToString() +
-                                    AST_Program.separator_line;
-                                memoryManager.SetFreeAddress(rightOutVar);
-                                //Pop edx in case something uses it
-                                result += "\t  pop\tedx" + AST_Program.separator_line;
-                                //EAX has the result
-                                if (popAX)
-                                {
-                                    res = memoryManager.GetFreeRegister(leftOutVar.dataType);
-                                    //We know for a fact that left operand is in eax
-                                    memoryManager.SetFreeAddress(leftOutVar);
-                                    result += "\t  mov\t" + res.ConvertToString() +
-                                        ",\teax" + AST_Program.separator_line;
-                                    result += "\t  pop\teax" + AST_Program.separator_line;
+                                    result += "\taddss\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    res = leftOutVar;
+                                    memoryManager.SetFreeFloatReg(rightOutVar);
                                 }
                                 else
                                 {
-                                    //We just roll with eax
+                                    result += "\t  add\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
                                     res = leftOutVar;
+                                    memoryManager.SetFreeAddress(rightOutVar);
+                                }
+                            }
+                            else if (input.exp_Data == "-")
+                            {
+                                if (leftOutVar.dataType is PT_Float32)
+                                {
+                                    result += "\tsubss\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    res = leftOutVar;
+                                    memoryManager.SetFreeFloatReg(rightOutVar);
+                                }
+                                else
+                                {
+                                    result += "\t  sub\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    res = leftOutVar;
+                                    memoryManager.SetFreeAddress(rightOutVar);
+                                }
+                            }
+                            else if (input.exp_Data == "*")
+                            {
+                                if (leftOutVar.dataType is PT_Float32)
+                                {
+                                    result += "\tmulss\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    res = leftOutVar;
+                                    memoryManager.SetFreeFloatReg(rightOutVar);
+                                }
+                                else
+                                {
+                                    result += "\t imul\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    res = leftOutVar;
+                                    memoryManager.SetFreeAddress(rightOutVar);
+                                }
+                            }
+                            else if (input.exp_Data == "/")
+                            {
+                                if (leftOutVar.dataType is PT_Float32)
+                                {
+                                    result += "\tdivss\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    res = leftOutVar;
+                                    memoryManager.SetFreeFloatReg(rightOutVar);
+                                }
+                                else
+                                {
+                                    bool popAX = false;
+                                    if (leftOutVar.address.address != "eax")
+                                    {
+                                        if (memoryManager.IsTaken("eax"))
+                                        {
+                                            popAX = true;
+                                            result += "\t push\teax" + AST_Program.separator_line;
+                                        }
+
+                                        //It's an operator that requires eax, MOV it there
+                                        result += "\t  mov\teax,\t" + leftOutVar.ConvertToString() +
+                                            AST_Program.separator_line;
+                                        memoryManager.SetFreeAddress(leftOutVar);
+                                        leftOutVar = new Variable(null, leftOutVar.dataType, new Address("eax", -1));
+                                        memoryManager.UpdateRegisterUsage(leftOutVar);
+                                    }
+
+                                    if (rightOutVar.address.length == -2 || rightOutVar.address.address == "edx")
+                                    {
+                                        //We have a constant, move to ebx or ecx
+                                        var tempRightOutVar = rightOutVar;
+                                        rightOutVar = memoryManager.GetFreeRegister(tempRightOutVar.dataType);
+                                        result += "\t  mov\t" + rightOutVar.ConvertToString() +
+                                            ",\t" + tempRightOutVar.ConvertToString() + AST_Program.separator_line;
+                                        memoryManager.SetFreeAddress(tempRightOutVar);
+                                    }
+
+                                    //Now left variable is in eax
+                                    //Push edx in case something uses it
+                                    result += "\t push\tedx" + AST_Program.separator_line;
+                                    //Zero-out EDX
+                                    result += "\t  xor\tedx,\tedx" + AST_Program.separator_line;
+                                    //memoryManager.usesDX = true;
+                                    result += "\t idiv\t" + rightOutVar.ConvertToString() +
+                                        AST_Program.separator_line;
+                                    memoryManager.SetFreeAddress(rightOutVar);
+                                    //Pop edx in case something uses it
+                                    result += "\t  pop\tedx" + AST_Program.separator_line;
+                                    //EAX has the result
+                                    if (popAX)
+                                    {
+                                        res = memoryManager.GetFreeRegister(leftOutVar.dataType);
+                                        //We know for a fact that left operand is in eax
+                                        memoryManager.SetFreeAddress(leftOutVar);
+                                        result += "\t  mov\t" + res.ConvertToString() +
+                                            ",\teax" + AST_Program.separator_line;
+                                        result += "\t  pop\teax" + AST_Program.separator_line;
+                                    }
+                                    else
+                                    {
+                                        //We just roll with eax
+                                        res = leftOutVar;
+                                    }
                                 }
                             }
                             else if (input.exp_Data == "%")
                             {
+                                if (leftOutVar.dataType is PT_Float32)
+                                {
+                                    throw new ASS_Exception("Can\'t perform operator % on floating-point values", -1);
+                                }
                                 bool popAX = false;
                                 if (leftOutVar.address.address != "eax")
                                 {
@@ -2035,10 +2294,20 @@ namespace SALO_Core.CodeBlocks
                                     throw new ASS_Exception("Can\'t assign to " + input.left.exp_Type.ToString(),
                                         new ASS_Exception("Assignment is supported only for variables", -1), -1);
                                 }
-                                result += "\t  mov\t" + leftOutVar.ConvertToString() +
-                                    ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
-                                res = leftOutVar;
-                                memoryManager.SetFreeAddress(rightOutVar);
+                                if (leftOutVar.dataType is PT_Float32 && !rightOutVar.address.IsConstant())
+                                {
+                                    result += "\t movd\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    res = leftOutVar;
+                                    memoryManager.SetFreeFloatReg(rightOutVar);
+                                }
+                                else
+                                {
+                                    result += "\t  mov\t" + leftOutVar.ConvertToString() +
+                                        ",\t" + rightOutVar.ConvertToString() + AST_Program.separator_line;
+                                    res = leftOutVar;
+                                    memoryManager.SetFreeAddress(rightOutVar);
+                                }
                             }
                             else throw new NotImplementedException(input.exp_Data + " is not supported");
                         }
@@ -2077,6 +2346,7 @@ namespace SALO_Core.CodeBlocks
                                 if(func != null)
                                 {
                                     func.isUsed = true;
+                                    func.usedFrom.Add(this);
                                     foundVar = new Variable(null, ParameterType.GetParameterType("void"),
                                         new Address(input.exp_Data, -4));
                                 }
@@ -2121,6 +2391,7 @@ namespace SALO_Core.CodeBlocks
                     {
                         //Mark library and function as used
                         fCorresponding.used = true;
+                        fCorresponding.usedFrom.Add(this);
                         Library lib = parent.defaultLibs.Find(a => a.functions.IndexOf(fCorresponding) != -1);
                         lib.used = true;
 
@@ -2159,6 +2430,7 @@ namespace SALO_Core.CodeBlocks
                         if (fLocal != null)
                         {
                             fUsed = fLocal.ast_function;
+                            fLocal.usedFrom.Add(this);
                             fLocal.isUsed = true;
                             location = 2;
                         }
