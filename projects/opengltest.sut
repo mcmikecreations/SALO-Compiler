@@ -64,46 +64,6 @@ POINT pt ₴
 число dwDamageMask ₴
 кінець PIXELFORMATDESCRIPTOR
 
-власний шматок WNDCLASSвнічого
-бере WNDCLASS_путь вказівник ₴ кінець
-дає нічого_путь ₴ кінець
-смакує
-рідний смакує
-mov eax, dword ptr ebp+8
-кінець рідний ₴
-кінець
-кінець WNDCLASSвнічого
-
-власний шматок MSGвнічого
-бере MSG_путь вказівник ₴ кінець
-дає нічого_путь ₴ кінець
-смакує
-рідний смакує
-mov eax, dword ptr ebp+8
-кінець рідний ₴
-кінець
-кінець MSGвнічого
-
-власний шматок PIXELFORMATDESCRIPTORвнічого
-бере PIXELFORMATDESCRIPTOR_путь вказівник ₴ кінець
-дає нічого_путь ₴ кінець
-смакує
-рідний смакує
-mov eax, dword ptr ebp+8
-кінець рідний ₴
-кінець
-кінець PIXELFORMATDESCRIPTORвнічого
-
-власний шматок RECTвнічого
-бере RECT_путь вказівник ₴ кінець
-дає нічого_путь ₴ кінець
-смакує
-рідний смакує
-mov eax, dword ptr ebp+8
-кінець рідний ₴
-кінець
-кінець RECTвнічого
-
 спільний загал дріб theta ₴
 спільний загал число clock ₴
 
@@ -167,16 +127,16 @@ mov eax, dword ptr ebp+8
 		pfd.cDepthBits = 16 ₴
 		pfd.cAccumBits = 0 ₴
 		pfd.cStencilBits = 0 ₴
-		SetPixelFormat(hdc, ChoosePixelFormat(hdc, PIXELFORMATDESCRIPTORвнічого(&pfd)), PIXELFORMATDESCRIPTORвнічого(&pfd)) ₴
+		SetPixelFormat(hdc, ChoosePixelFormat(hdc, +(&pfd)), +(&pfd)) ₴
 		hrc = wglCreateContext(hdc) ₴
 		wglMakeCurrent(hdc, hrc) ₴
-		GetClientRect(hwnd, RECTвнічого(&rc)) ₴
+		GetClientRect(hwnd, +(&rc)) ₴
 		glViewport(0,0,rc.right, rc.bottom) ₴
 		clock = GetTickCount() ₴
 		вернути 0 ₴
 	кінець інакше смакує
 		якщо (uMsg == 5) смакує							//WM_SIZE
-			GetClientRect(hwnd, RECTвнічого(&rc)) ₴
+			GetClientRect(hwnd, +(&rc)) ₴
 			glViewport(0,0,rc.right, rc.bottom) ₴
 			вернути 0 ₴
 		кінець інакше смакує
@@ -257,7 +217,7 @@ mov eax, dword ptr ebp+8
 	wc.hIcon = LoadIcon(нічоговпуть(),числовпуть(32512))₴							//IDI_APPLICATION
 	wc.hCursor = LoadCursor(нічоговпуть(),числовпуть(32512))₴						//IDC_ARROW
 	//безпосередня реєстрація класу і створення вікна
-	RegisterClass(WNDCLASSвнічого(&wc))₴
+	RegisterClass(+(&wc))₴
 	hwnd = CreateWindowEx(
 		0, стрічкавпуть("FASMOPENGL32"), стрічкавпуть("OpenGL example"), 
 		382664704,																	//WS_VISIBLE+WS_OVERLAPPEDWINDOW+WS_CLIPCHILDREN+WS_CLIPSIBLINGS
@@ -268,9 +228,9 @@ mov eax, dword ptr ebp+8
 	цикл = 1 ₴
 	поки (цикл != 0)
 	смакує
-		цикл = GetMessage(MSGвнічого(&msg),нічоговпуть(),0,0) ₴
-		TranslateMessage(MSGвнічого(&msg)) ₴
-		DispatchMessage(MSGвнічого(&msg)) ₴
+		цикл = GetMessage(+(&msg),нічоговпуть(),0,0) ₴
+		TranslateMessage(+(&msg)) ₴
+		DispatchMessage(+(&msg)) ₴
 	кінець поки ₴
 	//код повернення
 	якщо (msg.wParam == 18) смакує

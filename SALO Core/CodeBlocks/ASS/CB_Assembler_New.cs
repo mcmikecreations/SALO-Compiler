@@ -1799,6 +1799,14 @@ namespace SALO_Core.CodeBlocks
                             {
                                 throw new NotImplementedException("Unary - is not yet supported");
                             }
+                            else if (input.exp_Data == "+")
+                            {
+                                if (rightOutVar.dataType is PT_Ptr)
+                                {
+                                    rightOutVar.dataType = new PT_Ptr() { innerParameterType = new PT_Void() };
+                                    res = rightOutVar;
+                                }
+                            }
                             else if (input.exp_Data == "&")
                             {
                                 if(input.right.exp_Type != Exp_Type.Variable)
@@ -2642,8 +2650,16 @@ namespace SALO_Core.CodeBlocks
                         memoryManager.SetFreeAddress(variable);
                         variable = reg;
                     }
-
-                    resString += "\t push\t" + variable.ConvertToString() + AST_Program.separator_line;
+                    if (variable.dataType is PT_Float32 && variable.address.IsFloatRegister())
+                    {
+                        resString += "\t  sub\tesp,\t4" + AST_Program.separator_line;
+                        resString += "\t movd\tdword ptr esp,\t" + variable.ConvertToString()
+                            + AST_Program.separator_line;
+                    }
+                    else
+                    {
+                        resString += "\t push\t" + variable.ConvertToString() + AST_Program.separator_line;
+                    }
                     memoryManager.SetFreeAddress(variable);
                     //TODO - It was probably a bad decision to re-set the data type
                     variable.dataType = parameterType;
